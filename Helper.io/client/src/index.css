@@ -1,6 +1,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
 @import "tailwindcss";
-
+ @tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 *{
   font-family: "Outfit", sans-serif;
@@ -9,4 +11,21 @@
 body {
   margin: 0;
   padding: 0;
+}
+
+@layer base {
+  h1 {
+    font-size: 2rem;
+    font-weight: 700;
+  }
+
+  h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+  }
+
+  h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+  }
 }

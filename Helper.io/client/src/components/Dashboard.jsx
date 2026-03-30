@@ -5,6 +5,8 @@ import { useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 import dashboard from "../assets/dashboard.svg";
 import icon from "../assets/icon.svg";
+import { awsList,pythonList,devOpsList } from "../middleware/doc-list";
+import MarkdownModol from "../components/MarkdownModol";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -25,15 +27,19 @@ const Dashboard = () => {
   }, []);
   const [decoded, setDecoded] = useState("");
   const [currentTopic, setCurrentTopic] = useState("");
+  const [currentFile, setCurrentFile] = useState("");
+
+  const list={
+    aws: awsList,
+    python: pythonList,
+    devops: devOpsList
+  }
 
   const onClickHandler = () => {
     localStorage.removeItem("token");
-    navigate("/sign-up");
-  };
-  const onIconClickHandler = () => {
-    localStorage.removeItem("token");
     navigate("/");
   };
+  
   // const token = localStorage.getItem("token");
   // const decoded = jwtDecode(token);
   return (
@@ -41,7 +47,7 @@ const Dashboard = () => {
       <div className="flex flex-row justify-between mb-6 mt-3 items-center">
         <div className="flex ">
           <div className="flex justify-center mr-25 ml-5 cursor-pointer">
-            <img src={icon} className="w-10 h-10 object-cover " alt="image" onClick={onIconClickHandler}/>
+            <img src={icon} className="w-10 h-10 object-cover " alt="image" onClick={onClickHandler}/>
             <span className="text-3xl ">Helper.io</span>
           </div>
           <div className="cursor-pointer">
@@ -55,6 +61,7 @@ const Dashboard = () => {
           onClick={onClickHandler}
         />
       </div>
+
       <div className="flex flex-row bg-[#e7e8ff] w-[80%] ml-38 p-2 border-none rounded-4xl  justify-around items-center">
         <div className="flex flex-col  text-pink-950 bg-">
           <h1 className=" text-3xl mb-1">Hi,{decoded.username}</h1>
@@ -68,7 +75,8 @@ const Dashboard = () => {
           alt="image"
         />
       </div>
-      <div className="flex justify-start flex-col mt-10">
+
+      <div className="flex justify-start flex-col mt-10 mb-10">
         <p className="text-xl text-slate-500 ml-40">Topics</p>
         <div className="flex bg-slate justify-center gap-3">
           <div className="border-none bg-[#f4ad5e] text-white p-2 rounded-xl cursor-pointer" onClick={()=>{setCurrentTopic("aws")}}>
@@ -77,15 +85,55 @@ const Dashboard = () => {
           <div className="border-none bg-[#032068] text-white p-2 rounded-xl cursor-pointer" onClick={()=>{setCurrentTopic("python")}}>
             Python
           </div>
-          <div className="border-none bg-[#036819] text-white p-2 rounded-xl cursor-pointer" onClick={()=>{setCurrentTopic("dev-ops")}}>
+          <div className="border-none bg-[#036819] text-white p-2 rounded-xl cursor-pointer" onClick={()=>{setCurrentTopic("devops")}}>
             Dev-Ops
           </div>
-          <div className="border-none text-slate-500 p-2 cursor-pointer">
+          <div className="border-none text-slate-500 p-2 cursor-pointer" onClick={()=>{setCurrentTopic("")}}>
             + Many more to come
           </div>
         </div>
       </div>
       
+      {currentTopic && (
+
+        <div className="grid grid-cols-2 mx-auto md:grid-cols-4 max-w-6xl gap-6 mb-10">
+
+          {Object.entries(list[currentTopic]).map(([key, value]) => (
+
+            <div
+              key={key}
+              onClick={() =>{
+                setCurrentFile(value)
+                
+                console.log(currentFile)
+                console.log(value)
+                
+              }
+              }
+              className="cursor-pointer bg-[#e7e8ff] hover:bg-[#cccde0] transition rounded-lg p-6 text-[#032068] text-center shadow"
+            >
+              {key}
+            </div>
+
+          ))}
+
+        </div>
+
+      )}
+
+
+      {/* MODAL */}
+
+      {currentFile && (
+        <MarkdownModol
+          topic={currentTopic}
+          file={currentFile}
+          close={() => setCurrentFile(null)}
+        />
+      )}
+
+
+    
     </>
   );
 };

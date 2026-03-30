@@ -2,7 +2,7 @@ import { usernameExists } from "../middleware/checkUsername.js";
 import sql from "../configs/db.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import {r2} from '../configs/r2Client.js'
+import { r2 } from "../configs/r2Client.js";
 import { GetObjectCommand } from "@aws-sdk/client-s3";
 
 export const userAdd = async (req, res) => {
@@ -78,9 +78,6 @@ export const userVerify = async (req, res) => {
         fullname: user.fullname,
       },
     });
-    
-      
-  
   } catch (error) {
     console.log(error);
     res.json({
@@ -90,26 +87,32 @@ export const userVerify = async (req, res) => {
   }
 };
 
+export const getDoc = async (req, res) => {
+  try {
 
-export const getDoc =async (req,res) =>{
-  const key = `${topic}/${file}.md`;
+    const { topic, file } = req.params;
+    const key = `${topic}/${file}`;
 
-  console.log("Requested key:", key);
 
-  const command = new GetObjectCommand({
-    Bucket: "notes-docs",
-    Key: key
-  });
+    const command = new GetObjectCommand({
+      Bucket: "notes-docs",
+      Key: key,
+    });
 
-  const response = await r2.send(command);
+    const response = await r2.send(command);
 
-  const stream = response.Body;
-  const chunks = [];
+    const data = await response.Body.transformToString();
 
-  for await (const chunk of stream) {
-    chunks.push(chunk);
+    res.set("Content-Type", "text/markdown");
+    res.send(data);
+
+  } catch (error) {
+
+    console.error(error);
+
+    res.status(500).json({
+      message: "Error fetching document",
+    });
+
   }
-
-  return Buffer.concat(chunks).toString("utf-8");
-
-}
+};
