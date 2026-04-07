@@ -2,8 +2,8 @@ import { usernameExists } from "../middleware/checkUsername.js";
 import sql from "../configs/db.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { r2 } from "../configs/r2Client.js";
-import { GetObjectCommand } from "@aws-sdk/client-s3";
+import { getDocFromR2 } from "../services/r2Service.js";
+import { askGemini } from "../services/geminiService.js";
 
 export const userAdd = async (req, res) => {
   try {
@@ -89,30 +89,86 @@ export const userVerify = async (req, res) => {
 
 export const getDoc = async (req, res) => {
   try {
-
     const { topic, file } = req.params;
-    const key = `${topic}/${file}`;
 
-
-    const command = new GetObjectCommand({
-      Bucket: "notes-docs",
-      Key: key,
-    });
-
-    const response = await r2.send(command);
-
-    const data = await response.Body.transformToString();
+    const data = await getDocFromR2(topic, file);
 
     res.set("Content-Type", "text/markdown");
     res.send(data);
-
   } catch (error) {
-
     console.error(error);
 
     res.status(500).json({
       message: "Error fetching document",
     });
-
   }
+};
+
+export const getSummarize = async (req, res) => {
+  const { topic, file } = req.body;
+
+  const document = await getDocFromR2(topic, file);
+
+  const prompt = `
+  Summarize the following learning document in simple terms for beginners.
+
+  ${document}
+  `;
+
+  const result = await askGemini(prompt);
+
+  res.json({ summary: result });
+};
+
+
+export const getQuiz = async (req, res) => {
+
+  const { topic, file } = req.body;
+
+  const document = await getDocFromR2(topic, file);
+
+  const prompt = `
+  Create 5 multiple choice quiz questions from the document.
+
+  Return JSON format like:
+
+  [
+    {
+      "question":"",
+      "options":["","","",""],
+      "answer":""
+    }
+  ]
+
+  Document:
+  ${document}
+  `;
+
+  const result = await askGemini(prompt);
+
+  res.json({ quiz: result });
+};
+
+
+export const getDoubt = async (req, res) => {
+
+  const { topic, file, question } = req.body;
+
+  const document = await getDocFromR2(topic, file);
+
+  const prompt = `
+  You are an AI tutor.
+
+  Use the document below to answer the question.
+
+  Document:
+  ${document}
+
+  Question:
+  ${question}
+  `;
+
+  const result = await askGemini(prompt);
+
+  res.json({ answer: result });
 };
