@@ -156,7 +156,7 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <ChatSidebar isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
+      <ChatSidebar isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} topic={currentTopic} file={currentFile} />
     </div>
   );
 };

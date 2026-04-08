@@ -1,15 +1,31 @@
 import React, { useState, useRef, useEffect } from "react";
-import { X, Send, Bot, User, Sparkles, FileText, HelpCircle, BrainCircuit } from "lucide-react";
+import axios from "axios";
+import {
+  X,
+  Send,
+  Bot,
+  User,
+  Sparkles,
+  FileText,
+  HelpCircle,
+  BrainCircuit,
+} from "lucide-react";
+import Markdown from "react-markdown";
 
-const ChatSidebar = ({ isOpen, onClose }) => {
+const ChatSidebar = ({ isOpen, onClose, topic, file }) => {
   const [messages, setMessages] = useState([
     {
       id: 1,
       role: "assistant",
-      text: "Hi there! I'm your AI Learning Assistant. How can I help you today?"
-    }
+      text: "Hi there! I'm your AI Learning Assistant. How can I help you today?",
+    },
   ]);
   const [inputValue, setInputValue] = useState("");
+  const [quiz, setQuiz] = useState(null);
+  const [currentQuestion, setCurrentQuestion] = useState(0);
+  const [selectedAnswer, setSelectedAnswer] = useState(null);
+  const [showResult, setShowResult] = useState(false);
+  const [score, setScore] = useState(0);
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef(null);
 
@@ -17,36 +33,133 @@ const ChatSidebar = ({ isOpen, onClose }) => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
+  const resetChat = () => {
+    setMessages([
+      {
+        id: 1,
+        role: "assistant",
+        text: "Hi there! I'm your AI Learning Assistant. How can I help you today?",
+      },
+    ]);
+
+    setQuiz(null);
+    setCurrentQuestion(0);
+    setSelectedAnswer(null);
+    setShowResult(false);
+    setScore(0);
+  };
+
+  const handleAnswer = (option) => {
+    const correct = quiz[currentQuestion].answer;
+
+    setSelectedAnswer(option);
+    setShowResult(true);
+
+    if (option === correct) {
+      setScore((prev) => prev + 1);
+    }
+  };
+
+  const nextQuestion = () => {
+    setSelectedAnswer(null);
+    setShowResult(false);
+
+    if (currentQuestion + 1 < quiz.length) {
+      setCurrentQuestion((prev) => prev + 1);
+    } else {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now(),
+          role: "assistant",
+          text: `🎉 Quiz finished! Your score: ${score}/${quiz.length}`,
+        },
+      ]);
+
+      setQuiz(null);
+    }
+  };
+
   useEffect(() => {
     scrollToBottom();
-  }, [messages, isTyping]);
+    
+    
+  }, [messages, isTyping,file]);
 
-  const handleSend = (text) => {
+  const handleSend = async (text) => {
     if (!text.trim()) return;
 
-    // Add user message
     const userMsg = { id: Date.now(), role: "user", text };
     setMessages((prev) => [...prev, userMsg]);
     setInputValue("");
     setIsTyping(true);
 
-    // Mock AI response
-    setTimeout(() => {
-      let aiResponseText = "I'm still learning! Right now I'm a mocked assistant, but eventually I'll be able to help you properly with that.";
-      
+    try {
+      let responseText = "";
       const lowerText = text.toLowerCase();
+
       if (lowerText.includes("summarize")) {
-        aiResponseText = "Here's a quick summary: The document covers the core concepts of the topic, breaking down the architecture and deployment steps. It highlights key features and best practices for scaling.";
+        console.log(topic, file);
+        const res = await axios.post("http://localhost:5000/api/ai/summarize", {
+          topic,
+          file,
+        });
+        console.log(res.data.summary);
+
+        responseText = res.data.summary;
       } else if (lowerText.includes("quiz")) {
-        aiResponseText = "Alright, pop quiz!\n1. What is the primary function of this service?\n2. Name two best practices when configuring it.\nDrop your answers below!";
+        const res = await axios.post("http://localhost:5000/api/ai/quiz", {
+          topic,
+          file,
+        });
+        let quizData = res.data.quiz;
+
+        if (typeof quizData === "string") {
+          quizData = quizData
+            .replace(/```json/g, "")
+            .replace(/```/g, "")
+            .trim();
+
+          quizData = JSON.parse(quizData);
+        }
+
+        setQuiz(quizData);
+        setCurrentQuestion(0);
+        setScore(0);
+        setSelectedAnswer(null);
+        setShowResult(false);
+
+        responseText = "🧠 Quiz started! Answer the questions below.";
+      } else {
+        const res = await axios.post("http://localhost:5000/api/ai/doubt", {
+          topic,
+          file,
+          question: text,
+        });
+
+        responseText = res.data.answer;
       }
 
-      const aiMsg = { id: Date.now() + 1, role: "assistant", text: aiResponseText };
-      setMessages((prev) => [...prev, aiMsg]);
-      setIsTyping(false);
-    }, 1500);
-  };
+      const aiMsg = {
+        id: Date.now() + 1,
+        role: "assistant",
+        text: responseText,
+      };
 
+      setMessages((prev) => [...prev, aiMsg]);
+    } catch (error) {
+      const aiMsg = {
+        id: Date.now() + 1,
+        role: "assistant",
+        text: "⚠️ Something went wrong connecting to the AI server.",
+      };
+
+      setMessages((prev) => [...prev, aiMsg]);
+      console.log(error);
+    } finally {
+      setIsTyping(false);
+    }
+  };
   const handleQuickAction = (action) => {
     handleSend(action);
   };
@@ -55,14 +168,14 @@ const ChatSidebar = ({ isOpen, onClose }) => {
     <>
       {/* Backdrop overlay for mobile (optional, but good for focus) */}
       {isOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-40 lg:hidden"
           onClick={onClose}
         />
       )}
 
       {/* Sidebar Panel */}
-      <div 
+      <div
         className={`fixed top-0 right-0 h-full w-full sm:w-96 bg-white shadow-2xl flex flex-col z-50 transition-transform duration-300 ease-in-out ${
           isOpen ? "translate-x-0" : "translate-x-full"
         }`}
@@ -78,8 +191,11 @@ const ChatSidebar = ({ isOpen, onClose }) => {
               <p className="text-xs text-slate-500">Always here to help</p>
             </div>
           </div>
-          <button 
-            onClick={onClose}
+          <button
+            onClick={() => {
+              resetChat();
+              onClose();
+            }}
             className="p-2 hover:bg-slate-100 rounded-full text-slate-500 transition-colors"
           >
             <X size={20} />
@@ -88,26 +204,33 @@ const ChatSidebar = ({ isOpen, onClose }) => {
 
         {/* Chat Area */}
         <div className="flex-1 overflow-y-auto p-4 bg-slate-50 flex flex-col gap-4">
-          
           {/* Quick Actions (only show if few messages) */}
           {messages.length <= 2 && (
             <div className="flex flex-col gap-2 mb-4">
-              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider ml-1">Suggested Actions</p>
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider ml-1">
+                Suggested Actions
+              </p>
               <div className="flex flex-wrap gap-2">
-                <button 
-                  onClick={() => handleQuickAction("Can you summarize the current document?")}
+                <button
+                  onClick={() =>
+                    handleQuickAction("Can you summarize the current document?")
+                  }
                   className="flex items-center gap-2 text-sm bg-white border border-slate-200 hover:border-[#f4ad5e] text-slate-700 hover:text-[#f4ad5e] px-3 py-2 rounded-lg transition-colors shadow-sm"
                 >
                   <FileText size={16} /> Summarize
                 </button>
-                <button 
-                  onClick={() => handleQuickAction("Generate a quick quiz on this topic.")}
+                <button
+                  onClick={() =>
+                    handleQuickAction("Generate a quick quiz on this topic.")
+                  }
                   className="flex items-center gap-2 text-sm bg-white border border-slate-200 hover:border-[#036819] text-slate-700 hover:text-[#036819] px-3 py-2 rounded-lg transition-colors shadow-sm"
                 >
                   <BrainCircuit size={16} /> Quiz Me
                 </button>
-                <button 
-                  onClick={() => handleQuickAction("I have a question about this topic.")}
+                <button
+                  onClick={() =>
+                    handleQuickAction("I have a question about this topic.")
+                  }
                   className="flex items-center gap-2 text-sm bg-white border border-slate-200 hover:border-[#032068] text-slate-700 hover:text-[#032068] px-3 py-2 rounded-lg transition-colors shadow-sm"
                 >
                   <HelpCircle size={16} /> Question
@@ -118,29 +241,80 @@ const ChatSidebar = ({ isOpen, onClose }) => {
 
           {/* Messages */}
           {messages.map((msg) => (
-            <div 
-              key={msg.id} 
+            <div
+              key={msg.id}
               className={`flex gap-3 max-w-[85%] ${msg.role === "user" ? "ml-auto flex-row-reverse" : "mr-auto"}`}
             >
-              <div className={`shrink-0 w-8 h-8 flex items-center justify-center rounded-full mt-1 ${
-                msg.role === "user" ? "bg-slate-200 text-slate-600" : "bg-gradient-to-br from-[#032068] to-[#0433a3] text-white shadow-sm"
-              }`}>
+              <div
+                className={`shrink-0 w-8 h-8 flex items-center justify-center rounded-full mt-1 ${
+                  msg.role === "user"
+                    ? "bg-slate-200 text-slate-600"
+                    : "bg-gradient-to-br from-[#032068] to-[#0433a3] text-white shadow-sm"
+                }`}
+              >
                 {msg.role === "user" ? <User size={16} /> : <Bot size={16} />}
               </div>
-              <div className={`p-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${
-                msg.role === "user" 
-                  ? "bg-slate-800 text-white rounded-tr-sm" 
-                  : "bg-white border border-slate-100 shadow-sm text-slate-700 rounded-tl-sm"
-              }`}>
-                {msg.text}
+              <div
+                className={`p-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${
+                  msg.role === "user"
+                    ? "bg-slate-800 text-white rounded-tr-sm"
+                    : "bg-white border border-slate-100 shadow-sm text-slate-700 rounded-tl-sm"
+                }`}
+              >
+                <Markdown>{msg.text}</Markdown>
               </div>
             </div>
           ))}
 
+          {quiz && (
+            <div className="bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
+              <h3 className="font-semibold text-slate-800 mb-3">
+                Question {currentQuestion + 1} / {quiz.length}
+              </h3>
+
+              <p className="mb-3 text-slate-700">
+                {quiz[currentQuestion].question}
+              </p>
+
+              <div className="flex flex-col gap-2">
+                {quiz[currentQuestion].options.map((option, i) => (
+                  <button
+                    key={i}
+                    onClick={() => handleAnswer(option)}
+                    disabled={showResult}
+                    className="text-left border border-slate-200 p-2 rounded-lg hover:bg-slate-100 cursor-pointer"
+                  >
+                    {option}
+                  </button>
+                ))}
+              </div>
+
+              {showResult && (
+                <div className="mt-3">
+                  {selectedAnswer === quiz[currentQuestion].answer ? (
+                    <p className="text-green-600 font-medium">✅ Correct!</p>
+                  ) : (
+                    <p className="text-red-600 font-medium">
+                      ❌ Incorrect. Correct answer:{" "}
+                      {quiz[currentQuestion].answer}
+                    </p>
+                  )}
+
+                  <button
+                    onClick={nextQuestion}
+                    className="mt-2 bg-[#032068] text-white px-3 py-1 rounded-md cursor-pointer"
+                  >
+                    Next Question
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Typing Indicator */}
           {isTyping && (
             <div className="flex gap-3 max-w-[85%] mr-auto items-center">
-               <div className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-gradient-to-br from-[#032068] to-[#0433a3] text-white shadow-sm">
+              <div className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-gradient-to-br from-[#032068] to-[#0433a3] text-white shadow-sm">
                 <Bot size={16} />
               </div>
               <div className="bg-white border border-slate-100 shadow-sm px-4 py-3 rounded-2xl rounded-tl-sm flex gap-1 items-center h-10">
@@ -150,27 +324,27 @@ const ChatSidebar = ({ isOpen, onClose }) => {
               </div>
             </div>
           )}
-          
+
           <div ref={messagesEndRef} />
         </div>
 
         {/* Input Area */}
         <div className="p-4 bg-white border-t border-slate-100">
-          <form 
+          <form
             onSubmit={(e) => {
               e.preventDefault();
               handleSend(inputValue);
             }}
             className="relative flex items-center"
           >
-            <input 
-              type="text" 
+            <input
+              type="text"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
-              placeholder="Ask me anything..." 
+              placeholder="Ask me anything..."
               className="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-full pl-5 pr-12 py-3 focus:outline-none focus:border-[#032068] focus:ring-1 focus:ring-[#032068] transition-all"
             />
-            <button 
+            <button
               type="submit"
               disabled={!inputValue.trim() || isTyping}
               className="absolute right-2 p-2 bg-[#032068] hover:bg-[#0433a3] disabled:bg-slate-300 disabled:cursor-not-allowed text-white rounded-full transition-colors flex items-center justify-center"
@@ -179,7 +353,9 @@ const ChatSidebar = ({ isOpen, onClose }) => {
             </button>
           </form>
           <div className="text-center mt-3">
-            <span className="text-[10px] text-slate-400">AI can make mistakes. Verify important information.</span>
+            <span className="text-[10px] text-slate-400">
+              AI can make mistakes. Verify important information.
+            </span>
           </div>
         </div>
       </div>

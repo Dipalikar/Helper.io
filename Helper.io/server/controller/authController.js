@@ -105,7 +105,9 @@ export const getDoc = async (req, res) => {
 };
 
 export const getSummarize = async (req, res) => {
+  
   const { topic, file } = req.body;
+  console.log(req.body.topic,req.body.file);
 
   const document = await getDocFromR2(topic, file);
 
