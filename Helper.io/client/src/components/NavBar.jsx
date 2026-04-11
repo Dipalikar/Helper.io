@@ -3,6 +3,7 @@ import icon from "../assets/icon.svg";
 import chat_icon from "../assets/chat-bot.svg";
 import { LogOut, User, Settings, ChevronDown, LayoutDashboard, BookOpen } from "lucide-react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
+import { AiOutlineAliwangwang } from "react-icons/ai";
 
 const NavBar = ({ toggleChatSidebar }) => {
   const navigate = useNavigate();
@@ -56,7 +57,7 @@ const NavBar = ({ toggleChatSidebar }) => {
           className="p-2.5 rounded-full hover:bg-[#e7e8ff] transition-colors relative"
           title="AI Assistant"
         >
-          <img src={chat_icon} className="w-6 h-6" alt="Chat" />
+          <AiOutlineAliwangwang className="w-10 h-10 text-[#032068]" alt="Chat" />
         </button>
 
         <div className="h-8 w-[1px] bg-slate-200"></div>

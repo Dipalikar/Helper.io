@@ -106,7 +106,7 @@ const Dashboard = () => {
             {popularTopics.map((topic) => (
               <Link
                 key={topic.id}
-                to="/topics"
+                to={`/topics/${topic.id}`}
                 className="group p-8 rounded-[2rem] border border-slate-100 bg-white hover:border-blue-200 hover:shadow-xl hover:shadow-blue-500/5 transition-all duration-300 decoration-transparent"
               >
                 <div className={`${topic.color} w-14 h-14 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform`}>

@@ -11,6 +11,7 @@ import {
   BrainCircuit,
 } from "lucide-react";
 import Markdown from "react-markdown";
+import { AiOutlineAliwangwang } from "react-icons/ai";
 
 const ChatSidebar = ({ isOpen, onClose, topic, file }) => {
   const [messages, setMessages] = useState([
@@ -184,7 +185,7 @@ const ChatSidebar = ({ isOpen, onClose, topic, file }) => {
         <div className="flex items-center justify-between p-4 border-b border-slate-100 bg-white">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-[#e7e8ff] rounded-xl text-[#032068]">
-              <Sparkles size={20} />
+              <AiOutlineAliwangwang size={20} />
             </div>
             <div>
               <h2 className="font-bold text-slate-800 text-lg">AI Assistant</h2>
@@ -249,10 +250,10 @@ const ChatSidebar = ({ isOpen, onClose, topic, file }) => {
                 className={`shrink-0 w-8 h-8 flex items-center justify-center rounded-full mt-1 ${
                   msg.role === "user"
                     ? "bg-slate-200 text-slate-600"
-                    : "bg-gradient-to-br from-[#032068] to-[#0433a3] text-white shadow-sm"
+                    : "text-[#032068] "
                 }`}
               >
-                {msg.role === "user" ? <User size={16} /> : <Bot size={16} />}
+                {msg.role === "user" ? <User size={16} /> : <AiOutlineAliwangwang size={24} />}
               </div>
               <div
                 className={`p-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${
