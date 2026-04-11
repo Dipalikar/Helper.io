@@ -1,21 +1,14 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
-import dashboard from "../assets/dashboard.svg";
-
-import { awsList, pythonList, devOpsList } from "../middleware/doc-list";
-import DocumentViewer from "./DocumentViewer";
+import dashboardImg from "../assets/dashboard.svg";
 import NavBar from "./NavBar";
 import ChatSidebar from "./ChatSidebar";
-import { ChevronDown, ChevronRight, FileText, Folder } from "lucide-react";
+import { ArrowRight, Code, Cloud, Cpu, Sparkles, LayoutDashboard } from "lucide-react";
 
 const Dashboard = () => {
   const navigate = useNavigate();
-
   const [decoded, setDecoded] = useState("");
-  const [currentTopic, setCurrentTopic] = useState("");
-  const [currentFile, setCurrentFile] = useState("");
-  const [expandedTopic, setExpandedTopic] = useState("");
   const [isChatOpen, setIsChatOpen] = useState(false);
 
   useEffect(() => {
@@ -31,132 +24,130 @@ const Dashboard = () => {
     }
   }, [navigate]);
 
-  const list = {
-    aws: awsList,
-    python: pythonList,
-    devops: devOpsList,
-  };
-
-  const topicNames = {
-    aws: "AWS",
-    python: "Python",
-    devops: "Dev-Ops"
-  };
+  const popularTopics = [
+    {
+      id: "aws",
+      name: "AWS & Cloud",
+      description: "Master cloud infrastructure and serverless architectures.",
+      icon: <Cloud className="text-blue-500" size={24} />,
+      color: "bg-blue-50",
+    },
+    {
+      id: "python",
+      name: "Python Mastery",
+      description: "From basics to advanced automation and data science.",
+      icon: <Code className="text-emerald-500" size={24} />,
+      color: "bg-emerald-50",
+    },
+    {
+      id: "devops",
+      name: "DevOps & CI/CD",
+      description: "Scale applications with modern deployment patterns.",
+      icon: <Cpu className="text-purple-500" size={24} />,
+      color: "bg-purple-50",
+    },
+  ];
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 relative overflow-x-hidden">
-      <div className="px-6 bg-white shadow-sm z-10 border-b border-slate-100">
+    <div className="min-h-screen bg-white">
+      {/* Navigation */}
+      <div className="max-w-7xl mx-auto px-6 border-b border-slate-100">
         <NavBar toggleChatSidebar={() => setIsChatOpen(true)} />
       </div>
 
-      <div className="flex flex-1 overflow-hidden h-[calc(100vh-80px)]">
-        {/* Sidebar / File Explorer */}
-        <div className="w-72 bg-white border-r border-slate-200 flex flex-col overflow-y-auto shadow-[2px_0_10px_rgba(0,0,0,0.02)] z-0">
-          <div className="p-5 border-b border-slate-100">
-            <h2 className="text-xl font-bold text-slate-800 tracking-tight">Explorer</h2>
-            <p className="text-xs text-slate-500 mt-1">Browse your topics</p>
+      <main className="max-w-7xl mx-auto px-6 py-12">
+        {/* Hero Section */}
+        <section className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-[#032068] to-[#0a369d] p-8 md:p-16 text-white mb-20 shadow-2xl">
+          <div className="relative z-10 max-w-2xl">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-white/90 text-xs font-bold uppercase tracking-wider mb-6">
+              <Sparkles size={14} className="text-yellow-400" />
+              Welcome Back
+            </div>
+            <h1 className="text-4xl md:text-6xl font-extrabold mb-6 tracking-tight leading-tight">
+              Hi, {decoded?.username || "Learner"}! <br />
+              <span className="text-blue-200">What are we building today?</span>
+            </h1>
+            <p className="text-lg md:text-xl text-blue-100/80 mb-10 max-w-lg font-medium leading-relaxed">
+              Continue your journey through our curated learning paths and master the latest technologies with AI assistance.
+            </p>
+            <Link
+              to="/topics"
+              className="inline-flex items-center gap-2 bg-white text-[#032068] px-8 py-4 rounded-2xl font-bold text-lg hover:bg-blue-50 transition-all hover:scale-105 shadow-lg decoration-transparent"
+            >
+              Explore All Topics
+              <ArrowRight size={20} />
+            </Link>
           </div>
-          
-          <div className="p-4 flex flex-col gap-2">
-            {['aws', 'python', 'devops'].map((topicKey) => {
-              const isExpanded = expandedTopic === topicKey;
-              return (
-                <div key={topicKey} className="flex flex-col">
-                  <div
-                    className={`flex items-center gap-2 p-3 rounded-xl cursor-pointer transition-all duration-200 ${
-                      isExpanded 
-                        ? 'bg-[#e7e8ff] text-[#032068] shadow-sm' 
-                        : 'hover:bg-slate-100 text-slate-700'
-                    }`}
-                    onClick={() => setExpandedTopic(isExpanded ? "" : topicKey)}
-                  >
-                    {isExpanded ? (
-                      <ChevronDown size={18} className="text-[#032068]" />
-                    ) : (
-                      <ChevronRight size={18} className="text-slate-400" />
-                    )}
-                    <Folder size={20} className={isExpanded ? "text-[#032068]" : "text-slate-400"} />
-                    <span className="font-semibold text-sm">
-                      {topicNames[topicKey]}
-                    </span>
-                  </div>
 
-                  {isExpanded && (
-                    <div className="flex flex-col pl-9 pr-2 py-2 gap-1 animate-in slide-in-from-top-2 duration-300">
-                      {Object.entries(list[topicKey]).map(([key, value]) => {
-                        const isSelected = currentFile === value;
-                        return (
-                          <div
-                            key={key}
-                            onClick={() => {
-                              setCurrentTopic(topicKey);
-                              setCurrentFile(value);
-                            }}
-                            className={`flex items-center gap-2 cursor-pointer text-sm p-2.5 rounded-lg transition-all duration-200 ${
-                              isSelected
-                                ? 'bg-[#032068] text-white shadow-md'
-                                : 'text-slate-600 hover:text-[#032068] hover:bg-[#e7e8ff]'
-                            }`}
-                          >
-                            <FileText size={16} className={isSelected ? 'text-white' : 'text-slate-400'} />
-                            <span className="truncate" title={key}>{key}</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
+          {/* Abstract background blobs */}
+          <div className="absolute top-0 right-0 -mr-20 -mt-20 w-96 h-96 bg-blue-400/20 rounded-full blur-[100px]"></div>
+          <div className="absolute bottom-0 right-0 mr-40 mb-10 hidden lg:block">
+            <img 
+              src={dashboardImg} 
+              alt="Hero Illustration" 
+              className="w-[450px] drop-shadow-2xl animate-float"
+            />
+          </div>
+        </section>
+
+        {/* Popular Topics Grid */}
+        <section className="mb-20">
+          <div className="flex items-center justify-between mb-10">
+            <div>
+              <h2 className="text-3xl font-bold text-slate-900 tracking-tight">Popular Topics</h2>
+              <p className="text-slate-500 mt-1">Jump right back into your favorite subjects</p>
+            </div>
+            <Link to="/topics" className="text-[#032068] font-bold hover:underline flex items-center gap-1 decoration-transparent">
+              View All <ArrowRight size={18} />
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {popularTopics.map((topic) => (
+              <Link
+                key={topic.id}
+                to="/topics"
+                className="group p-8 rounded-[2rem] border border-slate-100 bg-white hover:border-blue-200 hover:shadow-xl hover:shadow-blue-500/5 transition-all duration-300 decoration-transparent"
+              >
+                <div className={`${topic.color} w-14 h-14 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform`}>
+                  {topic.icon}
                 </div>
-              );
-            })}
-            
-            <div className="mt-6 px-4 text-center">
-              <div className="inline-block px-3 py-1 bg-slate-100 rounded-full text-xs font-medium text-slate-500">
-                + Many more coming soon
-              </div>
+                <h3 className="text-xl font-bold text-slate-900 mb-2">{topic.name}</h3>
+                <p className="text-slate-500 text-sm leading-relaxed mb-6">
+                  {topic.description}
+                </p>
+                <div className="flex items-center text-[#032068] text-sm font-bold opacity-0 group-hover:opacity-100 transition-opacity">
+                  Start Learning <ArrowRight size={16} className="ml-1" />
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+
+        {/* Community/Stats Section */}
+        <section className="grid grid-cols-1 md:grid-cols-2 gap-8 py-12 border-t border-slate-100">
+          <div className="bg-slate-50 p-8 rounded-3xl flex items-center gap-6">
+            <div className="p-4 bg-white rounded-2xl shadow-sm">
+                <Sparkles className="text-yellow-500" size={32}/>
+            </div>
+            <div>
+              <h4 className="font-bold text-slate-900">AI Tutor Ready</h4>
+              <p className="text-slate-500 text-sm">Our assistant is here to help with any questions.</p>
             </div>
           </div>
-        </div>
+          <div className="bg-slate-50 p-8 rounded-3xl flex items-center gap-6">
+            <div className="p-4 bg-white rounded-2xl shadow-sm">
+                <LayoutDashboard className="text-blue-500" size={32}/>
+            </div>
+            <div>
+              <h4 className="font-bold text-slate-900">Personalized Feed</h4>
+              <p className="text-slate-500 text-sm">We've customized your dashboard for optimal learning.</p>
+            </div>
+          </div>
+        </section>
+      </main>
 
-        {/* Main Content Area */}
-        <div className="flex-1 overflow-y-auto bg-slate-50 p-8 relative">
-          
-          {currentFile ? (
-            <DocumentViewer topic={currentTopic} file={currentFile} />
-          ) : (
-            <>
-              {/* Hero Banner */}
-              <div className="flex flex-col md:flex-row bg-gradient-to-r from-[#e7e8ff] to-[#f4f5ff] max-w-5xl mx-auto p-8 border border-white rounded-[2rem] justify-between items-center shadow-sm gap-6">
-                <div className="flex flex-col text-[#032068]">
-                  <h1 className="text-4xl font-extrabold mb-3 tracking-tight">
-                    Hi, {decoded?.username || "Learner"}! 👋
-                  </h1>
-                  <p className="text-lg text-[#032068]/80 font-medium max-w-md">
-                    Ready to level up your skills? Select a topic from the explorer to begin.
-                  </p>
-                </div>
-                <img
-                  src={dashboard}
-                  className="w-48 h-48 object-contain drop-shadow-xl z-10 hover:scale-105 transition-transform duration-300"
-                  alt="Dashboard Illustration"
-                />
-              </div>
-              
-              {/* Placeholder when no file is selected */}
-              <div className="max-w-5xl mx-auto mt-12 text-center flex flex-col items-center justify-center py-24 border-2 border-dashed border-slate-200 rounded-3xl bg-slate-50/50">
-                <div className="bg-white p-6 rounded-full shadow-sm mb-6">
-                  <Folder size={48} className="text-[#032068]/40" />
-                </div>
-                <h3 className="text-2xl font-bold text-slate-700 mb-3">No Document Selected</h3>
-                <p className="text-slate-500 max-w-md text-base">
-                  Use the file explorer on the left to navigate through AWS, Python, and Dev-Ops topics to open your documents.
-                </p>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-
-      <ChatSidebar isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} topic={currentTopic} file={currentFile} />
+      <ChatSidebar isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
     </div>
   );
 };

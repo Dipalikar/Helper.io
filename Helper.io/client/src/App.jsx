@@ -5,6 +5,7 @@ import SignIn from "./components/SignIn";
 import { Toaster } from "react-hot-toast";
 import Dashboard from "./components/Dashboard";
 import LandingPage from "./components/LandingPage";
+import Topics from "./components/Topics";
 
 
 const App = () => {
@@ -15,6 +16,7 @@ const App = () => {
         <Route path="/" element={<LandingPage/>}/>
         <Route path="sign-up" element={<SignUp/>}/>
         <Route path="dashboard" element={<Dashboard/>}/>
+        <Route path="topics" element={<Topics/>}/>
         <Route path="sign-in" element={<SignIn/>}/>
       </Routes>
     </div>
