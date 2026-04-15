@@ -5,6 +5,7 @@ import dashboardImg from "../assets/dashboard.svg";
 import NavBar from "./NavBar";
 import ChatSidebar from "./ChatSidebar";
 import { ArrowRight, Code, Cloud, Cpu, Sparkles, LayoutDashboard } from "lucide-react";
+import { AiOutlineAliwangwang } from "react-icons/ai";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -52,7 +53,7 @@ const Dashboard = () => {
     <div className="min-h-screen bg-white">
       {/* Navigation */}
       <div className="max-w-7xl mx-auto px-6 border-b border-slate-100">
-        <NavBar toggleChatSidebar={() => setIsChatOpen(true)} />
+        <NavBar toggleChatSidebar={() => setIsChatOpen(!isChatOpen)} />
       </div>
 
       <main className="max-w-7xl mx-auto px-6 py-12">
@@ -60,7 +61,7 @@ const Dashboard = () => {
         <section className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-[#032068] to-[#0a369d] p-8 md:p-16 text-white mb-20 shadow-2xl">
           <div className="relative z-10 max-w-2xl">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-white/90 text-xs font-bold uppercase tracking-wider mb-6">
-              <Sparkles size={14} className="text-yellow-400" />
+              <AiOutlineAliwangwang size={14} className="text-yellow-400" />
               Welcome Back
             </div>
             <h1 className="text-4xl md:text-6xl font-extrabold mb-6 tracking-tight leading-tight">
@@ -128,7 +129,7 @@ const Dashboard = () => {
         <section className="grid grid-cols-1 md:grid-cols-2 gap-8 py-12 border-t border-slate-100">
           <div className="bg-slate-50 p-8 rounded-3xl flex items-center gap-6">
             <div className="p-4 bg-white rounded-2xl shadow-sm">
-                <Sparkles className="text-yellow-500" size={32}/>
+                <AiOutlineAliwangwang className="text-yellow-500" size={32}/>
             </div>
             <div>
               <h4 className="font-bold text-slate-900">AI Tutor Ready</h4>

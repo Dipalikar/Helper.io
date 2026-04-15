@@ -5,7 +5,6 @@ import {
   Send,
   Bot,
   User,
-  Sparkles,
   FileText,
   HelpCircle,
   BrainCircuit,
@@ -13,7 +12,7 @@ import {
 import Markdown from "react-markdown";
 import { AiOutlineAliwangwang } from "react-icons/ai";
 
-const ChatSidebar = ({ isOpen, onClose, topic, file }) => {
+const ChatSidebar = ({ isOpen, onClose, topic, file, inline = false }) => {
   const [messages, setMessages] = useState([
     {
       id: 1,
@@ -167,8 +166,8 @@ const ChatSidebar = ({ isOpen, onClose, topic, file }) => {
 
   return (
     <>
-      {/* Backdrop overlay for mobile (optional, but good for focus) */}
-      {isOpen && (
+      {/* Backdrop overlay for mobile (only if not inline) */}
+      {isOpen && !inline && (
         <div
           className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-40 lg:hidden"
           onClick={onClose}
@@ -177,9 +176,11 @@ const ChatSidebar = ({ isOpen, onClose, topic, file }) => {
 
       {/* Sidebar Panel */}
       <div
-        className={`fixed top-0 right-0 h-full w-full sm:w-96 bg-white shadow-2xl flex flex-col z-50 transition-transform duration-300 ease-in-out ${
-          isOpen ? "translate-x-0" : "translate-x-full"
-        }`}
+        className={`${
+          inline 
+            ? `relative border-l border-slate-200 h-full ${isOpen ? "w-80 opacity-100" : "w-0 opacity-0 overflow-hidden"}` 
+            : `fixed top-0 right-0 h-full w-full sm:w-96 shadow-2xl z-50 ${isOpen ? "translate-x-0" : "translate-x-full"}`
+        } bg-white flex flex-col transition-all duration-300 ease-in-out`}
       >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-slate-100 bg-white">

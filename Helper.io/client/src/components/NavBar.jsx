@@ -24,7 +24,11 @@ const NavBar = ({ toggleChatSidebar }) => {
     <nav className="flex flex-row justify-between h-20 items-center">
       {/* Brand Section */}
       <div className="flex items-center gap-8">
-        <Link to="/dashboard" className="flex items-center gap-2 group decoration-transparent">
+        <Link 
+          to="/" 
+          onClick={handleLogout}
+          className="flex items-center gap-2 group decoration-transparent"
+        >
           <div className="bg-[#032068] p-2 rounded-xl transition-transform group-hover:scale-110">
             <img src={icon} className="w-6 h-6 invert" alt="Logo" />
           </div>

@@ -45,6 +45,9 @@ const Topics = () => {
     } else {
       setCurrentFile("");
     }
+
+    // Automatically close chat when navigating to a new topic or file
+    setIsChatOpen(false);
   }, [urlTopic, urlFile]);
 
   // SEO: Update page title - set to only topic/file name as requested
@@ -84,7 +87,7 @@ const Topics = () => {
   return (
     <div className="h-screen flex flex-col bg-slate-50 relative overflow-hidden">
       <div className="px-6 bg-white shadow-sm z-10 border-b border-slate-100 flex-shrink-0">
-        <NavBar toggleChatSidebar={() => setIsChatOpen(true)} />
+        <NavBar toggleChatSidebar={() => setIsChatOpen(!isChatOpen)} />
       </div>
 
       <div className="flex flex-1 overflow-hidden">
@@ -154,7 +157,7 @@ const Topics = () => {
         </div>
 
         {/* Main Content Area */}
-        <div className="flex-1 overflow-y-auto bg-slate-50 p-8 relative">
+        <div className="flex-1 overflow-y-auto bg-white p-8 relative">
           {currentFile ? (
             <div className="max-w-5xl mx-auto">
               <DocumentViewer topic={currentTopic} file={currentFile} />
@@ -171,9 +174,16 @@ const Topics = () => {
             </div>
           )}
         </div>
-      </div>
 
-      <ChatSidebar isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} topic={currentTopic} file={currentFile} />
+        {/* AI Assistant Sidebar - Integrated into Layout */}
+        <ChatSidebar 
+          isOpen={isChatOpen} 
+          onClose={() => setIsChatOpen(false)} 
+          topic={currentTopic} 
+          file={currentFile} 
+          inline={true}
+        />
+      </div>
     </div>
   );
 };
