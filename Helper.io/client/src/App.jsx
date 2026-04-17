@@ -6,7 +6,7 @@ import { Toaster } from "react-hot-toast";
 import Dashboard from "./components/Dashboard";
 import LandingPage from "./components/LandingPage";
 import Topics from "./components/Topics";
-
+import AccountSettings from "./components/AccountSettings";
 
 const App = () => {
   return (
@@ -20,9 +20,9 @@ const App = () => {
         <Route path="topics/:topic" element={<Topics/>}/>
         <Route path="topics/:topic/:file" element={<Topics/>}/>
         <Route path="sign-in" element={<SignIn/>}/>
+        <Route path="settings" element={<AccountSettings/>}/>
       </Routes>
     </div>
-    
   );
 };
 

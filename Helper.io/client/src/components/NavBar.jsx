@@ -21,7 +21,7 @@ const NavBar = ({ toggleChatSidebar }) => {
   ];
 
   return (
-    <nav className="flex flex-row justify-between h-20 items-center">
+    <nav className="flex flex-row justify-between h-20 w-full items-center">
       {/* Brand Section */}
       <div className="flex items-center gap-8">
         <Link 
@@ -84,10 +84,14 @@ const NavBar = ({ toggleChatSidebar }) => {
                 <p className="text-xs text-slate-500 truncate">Settings & Profile</p>
               </div>
               
-              <button className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-600 hover:bg-[#f4f5ff] hover:text-[#032068] transition-colors">
+              <Link 
+                to="/settings"
+                onClick={() => setIsProfileOpen(false)}
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-600 hover:bg-[#f4f5ff] hover:text-[#032068] transition-colors decoration-transparent"
+              >
                 <Settings size={18} />
                 <span>Account Settings</span>
-              </button>
+              </Link>
               
               <div className="h-[1px] bg-slate-50 my-1"></div>
               

@@ -32,13 +32,13 @@ export const awsList = {
   "Amazon VPC ": "vpc.md",
 };
 
-export const pythonList= {
-    "Datatypes":"datatypes.md",
-    "Dictionary":"dictionary.md",
-    "Fuction":"function.md",
-    "Installation":"installation.md",
-    "Introduction":"intro.md",
-    "List":"list.md",
-    "Loop":"loop.md",
-    "Tuple":"tuple.md"
-}
+export const pythonList = {
+  "Introduction": "01_introduction.md",
+  "Variables & Datatypes": "02_variables_datatypes.md",
+  "Basic Operators": "03_operators.md",
+  "Control Flow": "04_control_flow.md",
+  "Loops": "05_loops.md",
+  "Data Structures": "06_lists_dictionaries.md",
+  "Functions": "07_functions.md",
+};
+

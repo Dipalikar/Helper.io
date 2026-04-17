@@ -1,6 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
 @import "tailwindcss";
- @tailwind base;
+@plugin "@tailwindcss/typography";
+@tailwind base;
 @tailwind components;
 @tailwind utilities;
 
@@ -28,4 +29,36 @@ body {
     font-size: 1.25rem;
     font-weight: 600;
   }
+}
+
+/* Custom Minimalist Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.12);
+  border-radius: 20px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.25);
+}
+
+/* Remove up/down arrow buttons (handles) */
+::-webkit-scrollbar-button {
+  display: none !important;
+  width: 0;
+  height: 0;
+}
+
+/* Firefox Support */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.12) transparent;
 }

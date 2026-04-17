@@ -52,7 +52,7 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-white">
       {/* Navigation */}
-      <div className="max-w-7xl mx-auto px-6 border-b border-slate-100">
+      <div className=" mx-auto px-6 border-b border-slate-100">
         <NavBar toggleChatSidebar={() => setIsChatOpen(!isChatOpen)} />
       </div>
 
