@@ -12,7 +12,7 @@ import {
 import Markdown from "react-markdown";
 import { AiOutlineAliwangwang } from "react-icons/ai";
 
-const ChatSidebar = ({ isOpen, onClose, topic, file, inline = false }) => {
+const ChatSidebar = ({ isOpen, onClose, topic, file, file_key, inline = false }) => {
   const [messages, setMessages] = useState([
     {
       id: 1,
@@ -82,9 +82,21 @@ const ChatSidebar = ({ isOpen, onClose, topic, file, inline = false }) => {
 
   useEffect(() => {
     scrollToBottom();
-    
-    
-  }, [messages, isTyping,file]);
+  }, [messages, isTyping, file, file_key]);
+
+  const getApiEndpoint = (type) => {
+    if (file_key) {
+      return `http://localhost:5000/api/notes/ai/${type}`;
+    }
+    return `http://localhost:5000/api/ai/${type}`;
+  };
+
+  const getPayload = (extraParams = {}) => {
+    if (file_key) {
+      return { file_key, ...extraParams };
+    }
+    return { topic, file, ...extraParams };
+  };
 
   const handleSend = async (text) => {
     if (!text.trim()) return;
@@ -99,19 +111,10 @@ const ChatSidebar = ({ isOpen, onClose, topic, file, inline = false }) => {
       const lowerText = text.toLowerCase();
 
       if (lowerText.includes("summarize")) {
-        console.log(topic, file);
-        const res = await axios.post("http://localhost:5000/api/ai/summarize", {
-          topic,
-          file,
-        });
-        console.log(res.data.summary);
-
+        const res = await axios.post(getApiEndpoint("summarize"), getPayload());
         responseText = res.data.summary;
       } else if (lowerText.includes("quiz")) {
-        const res = await axios.post("http://localhost:5000/api/ai/quiz", {
-          topic,
-          file,
-        });
+        const res = await axios.post(getApiEndpoint("quiz"), getPayload());
         let quizData = res.data.quiz;
 
         if (typeof quizData === "string") {
@@ -131,12 +134,7 @@ const ChatSidebar = ({ isOpen, onClose, topic, file, inline = false }) => {
 
         responseText = "🧠 Quiz started! Answer the questions below.";
       } else {
-        const res = await axios.post("http://localhost:5000/api/ai/doubt", {
-          topic,
-          file,
-          question: text,
-        });
-
+        const res = await axios.post(getApiEndpoint("doubt"), getPayload({ question: text }));
         responseText = res.data.answer;
       }
 

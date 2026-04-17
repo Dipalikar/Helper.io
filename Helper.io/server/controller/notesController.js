@@ -1,6 +1,7 @@
 import sql from "../configs/db.js";
 import { putDocToR2, getPersonalDocFromR2, deleteDocFromR2 } from "../services/r2Service.js";
 import { v4 as uuidv4 } from "uuid";
+import { askGemini } from "../services/geminiService.js";
 
 export const uploadNote = async (req, res) => {
   try {
@@ -74,6 +75,80 @@ export const getNoteContent = async (req, res) => {
     res.status(200).json({ success: true, content });
   } catch (error) {
     console.error("Get Note Content Error:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const getUserSummarize = async (req, res) => {
+  try {
+    const { file_key } = req.body;
+    const document = await getPersonalDocFromR2(file_key);
+
+    const prompt = `
+    Summarize the following learning document in simple terms for beginners.
+  
+    ${document}
+    `;
+
+    const result = await askGemini(prompt);
+    res.json({ summary: result });
+  } catch (error) {
+    console.error("getUserSummarize Error:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const getUserQuiz = async (req, res) => {
+  try {
+    const { file_key } = req.body;
+    const document = await getPersonalDocFromR2(file_key);
+
+    const prompt = `
+    Create 5 multiple choice quiz questions from the document.
+  
+    Return JSON format like:
+  
+    [
+      {
+        "question":"",
+        "options":["","","",""],
+        "answer":""
+      }
+    ]
+  
+    Document:
+    ${document}
+    `;
+
+    const result = await askGemini(prompt);
+    res.json({ quiz: result });
+  } catch (error) {
+    console.error("getUserQuiz Error:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const getUserDoubt = async (req, res) => {
+  try {
+    const { file_key, question } = req.body;
+    const document = await getPersonalDocFromR2(file_key);
+
+    const prompt = `
+    You are an AI tutor.
+  
+    Use the document below to answer the question.
+  
+    Document:
+    ${document}
+  
+    Question:
+    ${question}
+    `;
+
+    const result = await askGemini(prompt);
+    res.json({ answer: result });
+  } catch (error) {
+    console.error("getUserDoubt Error:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };

@@ -305,6 +305,7 @@ const MyNotes = () => {
           isOpen={isChatOpen} 
           onClose={() => setIsChatOpen(false)} 
           inline={true}
+          file_key={selectedNote?.file_key}
         />
       </div>
     </div>
