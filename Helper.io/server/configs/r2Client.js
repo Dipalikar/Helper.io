@@ -8,3 +8,12 @@ export const r2 = new S3Client({
     secretAccessKey: process.env.R2_SECRET_KEY
   }
 });
+
+export const userR2 = new S3Client({
+  region: "auto",
+  endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+  credentials: {
+    accessKeyId: process.env.R2_USER_ACCESS_KEY,
+    secretAccessKey: process.env.R2_USER_SECRET_KEY
+  }
+});

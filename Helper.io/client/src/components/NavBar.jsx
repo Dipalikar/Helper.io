@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import icon from "../assets/icon.svg";
 import chat_icon from "../assets/chat-bot.svg";
-import { LogOut, User, Settings, ChevronDown, LayoutDashboard, BookOpen } from "lucide-react";
+import { LogOut, User, Settings, ChevronDown, LayoutDashboard, BookOpen, FileText } from "lucide-react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import { AiOutlineAliwangwang } from "react-icons/ai";
 
@@ -18,6 +18,7 @@ const NavBar = ({ toggleChatSidebar }) => {
   const navLinks = [
     { name: "Dashboard", path: "/dashboard", icon: <LayoutDashboard size={18} /> },
     { name: "Topics", path: "/topics", icon: <BookOpen size={18} /> },
+    { name: "My Notes", path: "/notes", icon: <FileText size={18} /> },
   ];
 
   return (

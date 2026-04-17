@@ -7,6 +7,7 @@ import Dashboard from "./components/Dashboard";
 import LandingPage from "./components/LandingPage";
 import Topics from "./components/Topics";
 import AccountSettings from "./components/AccountSettings";
+import MyNotes from "./components/MyNotes";
 
 const App = () => {
   return (
@@ -19,6 +20,7 @@ const App = () => {
         <Route path="topics" element={<Topics/>}/>
         <Route path="topics/:topic" element={<Topics/>}/>
         <Route path="topics/:topic/:file" element={<Topics/>}/>
+        <Route path="notes" element={<MyNotes/>}/>
         <Route path="sign-in" element={<SignIn/>}/>
         <Route path="settings" element={<AccountSettings/>}/>
       </Routes>
