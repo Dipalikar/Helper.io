@@ -1,6 +1,7 @@
 import express from "express";
 import { userAdd, userVerify, getDoc, getSummarize, getQuiz, getDoubt } from "../controller/authController.js";
 import { uploadNote, getNotes, getNoteContent, deleteNote, getUserSummarize, getUserQuiz, getUserDoubt } from "../controller/notesController.js";
+import { getComments, addComment, deleteComment } from "../controller/commentController.js";
 import { limiter } from "../middleware/rateLimiters.js";
 
 const authRouter = express.Router();
@@ -20,5 +21,10 @@ authRouter.delete("/notes/delete", deleteNote);
 authRouter.post("/notes/ai/summarize", getUserSummarize);
 authRouter.post("/notes/ai/quiz", getUserQuiz);
 authRouter.post("/notes/ai/doubt", getUserDoubt);
+
+// Comments routes
+authRouter.get("/comments", getComments);
+authRouter.post("/comments", addComment);
+authRouter.delete("/comments", deleteComment);
 
 export default authRouter;

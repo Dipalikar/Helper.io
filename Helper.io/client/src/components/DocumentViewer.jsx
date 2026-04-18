@@ -8,6 +8,7 @@ import { useEffect, useState, useRef } from "react";
 import { FileText, Loader2, Link as LinkIcon } from "lucide-react";
 import mermaid from "mermaid";
 import { atomOneLight } from "react-syntax-highlighter/dist/esm/styles/hljs";
+import StickyNotesOverlay from "./StickyNotesOverlay";
 
 // Initialize Mermaid
 mermaid.initialize({
@@ -37,6 +38,7 @@ const Mermaid = ({ chart }) => {
 export default function DocumentViewer({ topic, file }) {
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(false);
+  const containerRef = useRef(null);
 
   useEffect(() => {
     const getFile = async () => {
@@ -77,7 +79,8 @@ export default function DocumentViewer({ topic, file }) {
     : '';
 
   return (
-    <div className="bg-white border border-slate-200 shadow-xl rounded-[2.5rem] p-8 md:p-16 mb-12 mx-auto max-w-6xl min-h-full hover:shadow-2xl">
+    <div className="bg-white border border-slate-200 shadow-xl rounded-[2.5rem] p-8 md:p-16 mb-12 mx-auto max-w-6xl min-h-full hover:shadow-2xl relative" ref={containerRef}>
+      <StickyNotesOverlay containerRef={containerRef} document_key={`topics/${topic}/${file}`} />
       <div className="flex items-center gap-5 border-b border-slate-100 pb-8 mb-10 text-[#032068]">
         <div className="p-4 bg-gradient-to-br from-[#e7e8ff] to-[#f0f1ff] rounded-2xl shadow-sm">
           <FileText size={32} className="text-[#032068]" />

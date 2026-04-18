@@ -36,12 +36,17 @@ const Topics = () => {
       setCurrentTopic(urlTopic);
       setExpandedTopic(urlTopic);
     } else {
-        setCurrentTopic("");
+      setCurrentTopic("");
     }
     
-    // Reset or set current file based on URL
+    // Resolve filename from readable name in URL
     if (urlFile) {
-      setCurrentFile(urlFile);
+      const topicFiles = list[urlTopic] || {};
+      const decodedUrlFile = decodeURIComponent(urlFile);
+      // If the URL param matches a readable name (key), get its filename (value)
+      // Otherwise fallback to the param itself (for backwards compatibility)
+      const resolvedFile = topicFiles[decodedUrlFile] || decodedUrlFile;
+      setCurrentFile(resolvedFile);
     } else {
       setCurrentFile("");
     }
@@ -80,8 +85,8 @@ const Topics = () => {
     devops: "Dev-Ops"
   };
 
-  const handleFileSelect = (topic, file) => {
-    navigate(`/topics/${topic}/${file}`);
+  const handleFileSelect = (topic, readableName) => {
+    navigate(`/topics/${topic}/${encodeURIComponent(readableName)}`);
   };
 
   return (
@@ -132,11 +137,11 @@ const Topics = () => {
                   {isExpanded && (
                     <div className="flex flex-col pl-9 pr-2 py-2 gap-1 animate-in slide-in-from-top-2 duration-300">
                       {Object.entries(list[topicKey]).map(([key, value]) => {
-                        const isSelected = currentFile === value;
+                        const isSelected = decodeURIComponent(urlFile || "") === key;
                         return (
                           <div
                             key={key}
-                            onClick={() => handleFileSelect(topicKey, value)}
+                            onClick={() => handleFileSelect(topicKey, key)}
                             className={`flex items-center gap-2 cursor-pointer text-sm p-2.5 rounded-lg transition-all duration-200 ${
                               isSelected
                                 ? 'bg-[#032068] text-white shadow-md'

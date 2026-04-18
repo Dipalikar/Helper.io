@@ -1,7 +1,16 @@
 import React, { useState } from "react";
 import icon from "../assets/icon.svg";
 import chat_icon from "../assets/chat-bot.svg";
-import { LogOut, User, Settings, ChevronDown, LayoutDashboard, BookOpen, FileText } from "lucide-react";
+import {
+  LogOut,
+  User,
+  Settings,
+  ChevronDown,
+  LayoutDashboard,
+  BookOpen,
+  FileText,
+  StickyNote
+} from "lucide-react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import { AiOutlineAliwangwang } from "react-icons/ai";
 
@@ -15,8 +24,16 @@ const NavBar = ({ toggleChatSidebar }) => {
     navigate("/");
   };
 
+  const handleToggleCommentMode = () => {
+    window.dispatchEvent(new CustomEvent('toggle-comment-mode'));
+  };
+
   const navLinks = [
-    { name: "Dashboard", path: "/dashboard", icon: <LayoutDashboard size={18} /> },
+    {
+      name: "Dashboard",
+      path: "/dashboard",
+      icon: <LayoutDashboard size={18} />,
+    },
     { name: "Topics", path: "/topics", icon: <BookOpen size={18} /> },
     { name: "My Notes", path: "/notes", icon: <FileText size={18} /> },
   ];
@@ -25,15 +42,16 @@ const NavBar = ({ toggleChatSidebar }) => {
     <nav className="flex flex-row justify-between h-20 w-full items-center">
       {/* Brand Section */}
       <div className="flex items-center gap-8">
-        <Link 
-          to="/" 
-          onClick={handleLogout}
+        <Link
+          to="/dashboard"
           className="flex items-center gap-2 group decoration-transparent"
         >
           <div className="bg-[#032068] p-2 rounded-xl transition-transform group-hover:scale-110">
             <img src={icon} className="w-6 h-6 invert" alt="Logo" />
           </div>
-          <span className="text-2xl font-bold text-[#032068] tracking-tight">Helper.io</span>
+          <span className="text-2xl font-bold text-[#032068] tracking-tight">
+            Helper.io
+          </span>
         </Link>
 
         {/* Desktop Navigation */}
@@ -58,11 +76,22 @@ const NavBar = ({ toggleChatSidebar }) => {
       {/* Right Section: Chat & Profile */}
       <div className="flex items-center gap-5">
         <button
+          onClick={handleToggleCommentMode}
+          className="p-2.5 rounded-full hover:bg-yellow-100 transition-colors relative"
+          title="Add Sticky Note Comment"
+        >
+          <StickyNote className="w-8 h-8 text-[#036819]" />
+        </button>
+
+        <button
           onClick={toggleChatSidebar}
           className="p-2.5 rounded-full hover:bg-[#e7e8ff] transition-colors relative"
           title="AI Assistant"
         >
-          <AiOutlineAliwangwang className="w-10 h-10 text-[#032068]" alt="Chat" />
+          <AiOutlineAliwangwang
+            className="w-10 h-10 text-[#032068]"
+            alt="Chat"
+          />
         </button>
 
         <div className="h-8 w-[1px] bg-slate-200"></div>
@@ -75,17 +104,22 @@ const NavBar = ({ toggleChatSidebar }) => {
             <div className="w-9 h-9 bg-gradient-to-tr from-[#032068] to-[#2563eb] rounded-full flex items-center justify-center text-white shadow-sm">
               <User size={20} />
             </div>
-            <ChevronDown size={16} className={`text-slate-400 transition-transform duration-200 ${isProfileOpen ? 'rotate-180' : ''}`} />
+            <ChevronDown
+              size={16}
+              className={`text-slate-400 transition-transform duration-200 ${isProfileOpen ? "rotate-180" : ""}`}
+            />
           </button>
 
           {isProfileOpen && (
             <div className="absolute right-0 mt-2 w-56 bg-white border border-slate-100 rounded-2xl shadow-xl py-2 z-50 animate-in fade-in zoom-in-95 duration-100">
               <div className="px-4 py-3 border-b border-slate-50 mb-1">
                 <p className="text-sm font-bold text-slate-800">My Account</p>
-                <p className="text-xs text-slate-500 truncate">Settings & Profile</p>
+                <p className="text-xs text-slate-500 truncate">
+                  Settings & Profile
+                </p>
               </div>
-              
-              <Link 
+
+              <Link
                 to="/settings"
                 onClick={() => setIsProfileOpen(false)}
                 className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-600 hover:bg-[#f4f5ff] hover:text-[#032068] transition-colors decoration-transparent"
@@ -93,10 +127,10 @@ const NavBar = ({ toggleChatSidebar }) => {
                 <Settings size={18} />
                 <span>Account Settings</span>
               </Link>
-              
+
               <div className="h-[1px] bg-slate-50 my-1"></div>
-              
-              <button 
+
+              <button
                 onClick={handleLogout}
                 className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition-colors"
               >

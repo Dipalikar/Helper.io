@@ -82,7 +82,11 @@ const ChatSidebar = ({ isOpen, onClose, topic, file, file_key, inline = false })
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, isTyping, file, file_key]);
+  }, [messages, isTyping]);
+
+  useEffect(() => {
+    resetChat();
+  }, [file, file_key, topic]);
 
   const getApiEndpoint = (type) => {
     if (file_key) {
@@ -204,41 +208,6 @@ const ChatSidebar = ({ isOpen, onClose, topic, file, file_key, inline = false })
 
         {/* Chat Area */}
         <div className="flex-1 overflow-y-auto p-4 bg-slate-50 flex flex-col gap-4">
-          {/* Quick Actions (only show if few messages) */}
-          {messages.length <= 2 && (
-            <div className="flex flex-col gap-2 mb-4">
-              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider ml-1">
-                Suggested Actions
-              </p>
-              <div className="flex flex-wrap gap-2">
-                <button
-                  onClick={() =>
-                    handleQuickAction("Can you summarize the current document?")
-                  }
-                  className="flex items-center gap-2 text-sm bg-white border border-slate-200 hover:border-[#f4ad5e] text-slate-700 hover:text-[#f4ad5e] px-3 py-2 rounded-lg transition-colors shadow-sm"
-                >
-                  <FileText size={16} /> Summarize
-                </button>
-                <button
-                  onClick={() =>
-                    handleQuickAction("Generate a quick quiz on this topic.")
-                  }
-                  className="flex items-center gap-2 text-sm bg-white border border-slate-200 hover:border-[#036819] text-slate-700 hover:text-[#036819] px-3 py-2 rounded-lg transition-colors shadow-sm"
-                >
-                  <BrainCircuit size={16} /> Quiz Me
-                </button>
-                <button
-                  onClick={() =>
-                    handleQuickAction("I have a question about this topic.")
-                  }
-                  className="flex items-center gap-2 text-sm bg-white border border-slate-200 hover:border-[#032068] text-slate-700 hover:text-[#032068] px-3 py-2 rounded-lg transition-colors shadow-sm"
-                >
-                  <HelpCircle size={16} /> Question
-                </button>
-              </div>
-            </div>
-          )}
-
           {/* Messages */}
           {messages.map((msg) => (
             <div
@@ -314,8 +283,8 @@ const ChatSidebar = ({ isOpen, onClose, topic, file, file_key, inline = false })
           {/* Typing Indicator */}
           {isTyping && (
             <div className="flex gap-3 max-w-[85%] mr-auto items-center">
-              <div className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-gradient-to-br from-[#032068] to-[#0433a3] text-white shadow-sm">
-                <Bot size={16} />
+              <div className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full text-[#032068]">
+                <AiOutlineAliwangwang size={24} />
               </div>
               <div className="bg-white border border-slate-100 shadow-sm px-4 py-3 rounded-2xl rounded-tl-sm flex gap-1 items-center h-10">
                 <div className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
@@ -330,6 +299,28 @@ const ChatSidebar = ({ isOpen, onClose, topic, file, file_key, inline = false })
 
         {/* Input Area */}
         <div className="p-4 bg-white border-t border-slate-100">
+          {!isTyping && !quiz && (
+            <div className="flex flex-wrap gap-2 mb-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <button
+                onClick={() => handleQuickAction("Can you summarize the current document?")}
+                className="flex items-center gap-1.5 text-[10px] md:text-xs bg-slate-50 border border-slate-200 hover:border-[#f4ad5e] hover:bg-[#f4ad5e]/5 text-slate-600 hover:text-[#f4ad5e] px-2.5 py-1.5 rounded-full transition-all shadow-sm"
+              >
+                <FileText size={12} /> Summarize
+              </button>
+              <button
+                onClick={() => handleQuickAction("Generate a quick quiz on this topic.")}
+                className="flex items-center gap-1.5 text-[10px] md:text-xs bg-slate-50 border border-slate-200 hover:border-[#036819] hover:bg-[#036819]/5 text-slate-600 hover:text-[#036819] px-2.5 py-1.5 rounded-full transition-all shadow-sm"
+              >
+                <BrainCircuit size={12} /> Quiz Me
+              </button>
+              <button
+                onClick={() => handleQuickAction("I have a question about this topic.")}
+                className="flex items-center gap-1.5 text-[10px] md:text-xs bg-slate-50 border border-slate-200 hover:border-[#032068] hover:bg-[#032068]/5 text-slate-600 hover:text-[#032068] px-2.5 py-1.5 rounded-full transition-all shadow-sm"
+              >
+                <HelpCircle size={12} /> Question
+              </button>
+            </div>
+          )}
           <form
             onSubmit={(e) => {
               e.preventDefault();

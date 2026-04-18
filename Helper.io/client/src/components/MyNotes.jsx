@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect, useRef } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 import NavBar from "./NavBar";
 import ChatSidebar from "./ChatSidebar";
+import StickyNotesOverlay from "./StickyNotesOverlay";
 import { FileText, Trash2, UploadCloud, Loader2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -14,11 +15,13 @@ import axios from "axios";
 
 const MyNotes = () => {
   const navigate = useNavigate();
+  const { noteTitle } = useParams();
   const [notes, setNotes] = useState([]);
   const [selectedNote, setSelectedNote] = useState(null);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [username, setUsername] = useState("");
   const [isNoteLoading, setIsNoteLoading] = useState(false);
+  const containerRef = useRef(null);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -38,6 +41,17 @@ const MyNotes = () => {
   useEffect(() => {
     document.title = "My Notes | Helper.io";
   }, []);
+
+  // Sync state with URL parameter
+  useEffect(() => {
+    if (notes.length > 0 && noteTitle) {
+      const decodedTitle = decodeURIComponent(noteTitle);
+      const note = notes.find(n => n.title === decodedTitle);
+      if (note && (!selectedNote || selectedNote.id !== note.id)) {
+        resolveNoteContent(note);
+      }
+    }
+  }, [notes, noteTitle]);
 
   const fetchNotes = async (user) => {
     try {
@@ -86,7 +100,12 @@ const MyNotes = () => {
     e.target.value = ""; // reset input
   };
 
-  const handleNoteSelect = async (note) => {
+  const handleNoteSelect = (note) => {
+    setIsChatOpen(false);
+    navigate(`/notes/${encodeURIComponent(note.title)}`);
+  };
+
+  const resolveNoteContent = async (note) => {
     if (note.content) {
       setSelectedNote(note);
       return;
@@ -212,7 +231,8 @@ const MyNotes = () => {
             </div>
           ) : selectedNote ? (
             <div className="max-w-5xl mx-auto">
-               <div className="bg-white border border-slate-200 shadow-xl rounded-[2.5rem] p-8 md:p-16 mb-12 mx-auto max-w-6xl min-h-full hover:shadow-2xl">
+               <div className="bg-white border border-slate-200 shadow-xl rounded-[2.5rem] p-8 md:p-16 mb-12 mx-auto max-w-6xl min-h-full hover:shadow-2xl relative" ref={containerRef}>
+                  <StickyNotesOverlay containerRef={containerRef} document_key={selectedNote.file_key} />
                   <div className="flex items-center gap-5 border-b border-slate-100 pb-8 mb-10 text-[#032068]">
                     <div className="p-4 bg-gradient-to-br from-[#e7e8ff] to-[#f0f1ff] rounded-2xl shadow-sm">
                       <FileText size={32} className="text-[#032068]" />

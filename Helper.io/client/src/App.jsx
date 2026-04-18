@@ -21,6 +21,7 @@ const App = () => {
         <Route path="topics/:topic" element={<Topics/>}/>
         <Route path="topics/:topic/:file" element={<Topics/>}/>
         <Route path="notes" element={<MyNotes/>}/>
+        <Route path="notes/:noteTitle" element={<MyNotes/>}/>
         <Route path="sign-in" element={<SignIn/>}/>
         <Route path="settings" element={<AccountSettings/>}/>
       </Routes>
