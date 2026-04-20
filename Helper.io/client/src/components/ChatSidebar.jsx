@@ -99,7 +99,10 @@ const ChatSidebar = ({ isOpen, onClose, topic, file, file_key, inline = false })
     if (file_key) {
       return { file_key, ...extraParams };
     }
-    return { topic, file, ...extraParams };
+    if (file) {
+      return { topic, file, ...extraParams };
+    }
+    return { ...extraParams };
   };
 
   const handleSend = async (text) => {
@@ -224,13 +227,35 @@ const ChatSidebar = ({ isOpen, onClose, topic, file, file_key, inline = false })
                 {msg.role === "user" ? <User size={16} /> : <AiOutlineAliwangwang size={24} />}
               </div>
               <div
-                className={`p-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${
+                className={`p-3 rounded-2xl text-sm leading-relaxed break-words overflow-hidden ${
                   msg.role === "user"
                     ? "bg-slate-800 text-white rounded-tr-sm"
                     : "bg-white border border-slate-100 shadow-sm text-slate-700 rounded-tl-sm"
                 }`}
               >
-                <Markdown>{msg.text}</Markdown>
+                <Markdown
+                  components={{
+                    p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                    code: ({ node, inline, className, children, ...props }) => {
+                      return inline ? (
+                        <code className="bg-slate-100 px-1 rounded text-pink-600" {...props}>
+                          {children}
+                        </code>
+                      ) : (
+                        <pre className="bg-slate-900 text-slate-100 p-3 rounded-lg my-2 overflow-x-auto max-w-full scrollbar-thin">
+                          <code className="whitespace-pre-wrap break-all" {...props}>
+                            {children}
+                          </code>
+                        </pre>
+                      );
+                    },
+                    ul: ({ children }) => <ul className="list-disc ml-4 mb-2">{children}</ul>,
+                    ol: ({ children }) => <ol className="list-decimal ml-4 mb-2">{children}</ol>,
+                    a: ({ children, href }) => <a href={href} className="text-blue-600 hover:underline break-all" target="_blank" rel="noopener noreferrer">{children}</a>,
+                  }}
+                >
+                  {msg.text}
+                </Markdown>
               </div>
             </div>
           ))}
@@ -299,7 +324,7 @@ const ChatSidebar = ({ isOpen, onClose, topic, file, file_key, inline = false })
 
         {/* Input Area */}
         <div className="p-4 bg-white border-t border-slate-100">
-          {!isTyping && !quiz && (
+          {!isTyping && !quiz && (file || file_key) && (
             <div className="flex flex-wrap gap-2 mb-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
               <button
                 onClick={() => handleQuickAction("Can you summarize the current document?")}

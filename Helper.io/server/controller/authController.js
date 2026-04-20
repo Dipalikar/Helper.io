@@ -105,31 +105,46 @@ export const getDoc = async (req, res) => {
 };
 
 export const getSummarize = async (req, res) => {
-  
-  const { topic, file } = req.body;
-  console.log(req.body.topic,req.body.file);
+  try {
+    const { topic, file } = req.body;
+    console.log(req.body.topic, req.body.file);
 
-  const document = await getDocFromR2(topic, file);
+    let document = "";
+    if (topic && file) {
+      document = await getDocFromR2(topic, file);
+    }
 
-  const prompt = `
+    const prompt = document
+      ? `
   Summarize the following learning document in simple terms for beginners.
 
   ${document}
+  `
+      : `
+  Please summarize the current topic you are an AI tutor for. If you don't know the topic, ask the user to specify it or open a document.
   `;
 
-  const result = await askGemini(prompt);
+    const result = await askGemini(prompt);
 
-  res.json({ summary: result });
+    res.json({ summary: result });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ summary: "Error generating summary." });
+  }
 };
 
 
 export const getQuiz = async (req, res) => {
+  try {
+    const { topic, file } = req.body;
 
-  const { topic, file } = req.body;
+    let document = "";
+    if (topic && file) {
+      document = await getDocFromR2(topic, file);
+    }
 
-  const document = await getDocFromR2(topic, file);
-
-  const prompt = `
+    const prompt = document
+      ? `
   Create 5 multiple choice quiz questions from the document.
 
   Return JSON format like:
@@ -144,21 +159,42 @@ export const getQuiz = async (req, res) => {
 
   Document:
   ${document}
+  `
+      : `
+  Create 3 general knowledge tech multiple choice quiz questions.
+
+  Return JSON format like:
+
+  [
+    {
+      "question":"",
+      "options":["","","",""],
+      "answer":""
+    }
+  ]
   `;
 
-  const result = await askGemini(prompt);
+    const result = await askGemini(prompt);
 
-  res.json({ quiz: result });
+    res.json({ quiz: result });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error generating quiz." });
+  }
 };
 
 
 export const getDoubt = async (req, res) => {
+  try {
+    const { topic, file, question } = req.body;
 
-  const { topic, file, question } = req.body;
+    let document = "";
+    if (topic && file) {
+      document = await getDocFromR2(topic, file);
+    }
 
-  const document = await getDocFromR2(topic, file);
-
-  const prompt = `
+    const prompt = document
+      ? `
   You are an AI tutor.
 
   Use the document below to answer the question.
@@ -168,9 +204,21 @@ export const getDoubt = async (req, res) => {
 
   Question:
   ${question}
+  `
+      : `
+  You are a helpful AI tutor.
+
+  Please answer the following user question:
+  
+  Question:
+  ${question}
   `;
 
-  const result = await askGemini(prompt);
+    const result = await askGemini(prompt);
 
-  res.json({ answer: result });
+    res.json({ answer: result });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ answer: "Something went wrong while getting the answer." });
+  }
 };
