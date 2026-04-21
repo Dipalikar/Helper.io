@@ -1,11 +1,44 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+/**
+ * geminiService.js  (OpenRouter edition)
+ *
+ * Uses OpenRouter's OpenAI-compatible API with 5 free models across
+ * DIFFERENT providers so a single-provider 429 storm doesn't block everything.
+ *
+ * Free models (all support `tool_choice` + `tools`):
+ *  1. meta-llama/llama-3.3-70b-instruct:free  – best instruction following, tool use
+ *  2. nvidia/nemotron-3-nano-30b-a3b:free      – proven agentic MoE (NVIDIA)
+ *  3. openai/gpt-oss-20b:free                  – OpenAI OSS, tool-use optimised
+ *  4. nvidia/nemotron-3-super-120b-a12b:free   – larger NVIDIA fallback
+ *  5. qwen/qwen3-coder:free                    – MoE 480B, last resort
+ */
+
+import axios from "axios";
 import dotenv from "dotenv";
 import { documentToolDeclarations } from "./documentTools.js";
 import { toolHandlers } from "./documentToolHandlers.js";
 
 dotenv.config();
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+// ─── OpenRouter configuration ─────────────────────────────────────────────────
+
+const OR_BASE_URL = "https://openrouter.ai/api/v1";
+const OR_HEADERS = {
+  Authorization: `Bearer ${process.env.OPEN_ROUTER_API_KEY}`,
+  "Content-Type": "application/json",
+  "HTTP-Referer": "https://helper.io",   // optional but recommended by OpenRouter
+  "X-Title": "Helper.io",
+};
+
+// Model priority list — picked from DIFFERENT providers to survive single-provider 429 storms.
+// All five explicitly support tool_choice + tools on OpenRouter's free tier.
+const FREE_MODELS = [
+  "nvidia/nemotron-3-nano-30b-a3b:free",       // NVIDIA · 30B MoE · agentic-optimised (proven)
+  "openai/gpt-oss-20b:free",                   // OpenAI OSS · 20B · designed for agentic tasks
+  "nvidia/nemotron-3-super-120b-a12b:free",    // NVIDIA · 120B MoE · more capable fallback
+  "qwen/qwen3-coder:free",                     // Alibaba · 480B MoE · last resort
+];
+
+// ─── System prompts ───────────────────────────────────────────────────────────
 
 const SYSTEM_PROMPT = `
 You are the Helper.io AI Assistant, a specialized AI tutor for technical learning on the Helper.io website.
@@ -18,6 +51,9 @@ CORE RULES:
 4. FORMATTING: Always use Markdown. Use code blocks for code snippets.
 5. RELEVANCE: If a document context is provided, use it to provide accurate and relevant answers.
 6. IDENTITY: You are Helper.io's official AI assistant.
+
+QUIZ / JSON RULE:
+When asked to produce quiz questions or any structured JSON/array output, you MUST return ONLY the raw JSON array with no additional text, explanation, markdown code fences, or reasoning traces before or after it.
 `;
 
 const AGENT_SYSTEM_PROMPT = `
@@ -30,140 +66,260 @@ You have access to five tools that let you manage the user's personal documents:
   • get_document     — read the content of a specific document
   • delete_document  — permanently remove a document
 
-DOCUMENT MANAGEMENT RULES:
-- When the user asks to "create", "write", "draft", or "save" a note/document → call create_document with rich markdown content.
-- When the user asks to "update", "edit", "add to", or "rewrite" a document → first list_documents if you don't know the id, then call update_document.
-- When the user asks "what notes do I have?" or "show my documents" → call list_documents.
-- When the user asks to "show", "read", or "open" a specific document → first list_documents if needed, then call get_document.
-- When the user asks to "delete" or "remove" → confirm the document name, then call delete_document.
-- Always produce high-quality, well-structured markdown content for created/updated documents.
+CRITICAL TOOL-USE RULES (follow strictly):
+- WHENEVER the user asks to "create", "write", "draft", "save", or "make" a note/document → you MUST call the create_document tool. Do NOT write the content as a plain text reply — use the tool.
+- WHENEVER the user asks to "update", "edit", "add to", "expand", or "rewrite" a document → first call list_documents if you don't know the id, then call update_document. Never reply with the updated content as plain text.
+- WHENEVER the user asks "what notes / documents do I have?" or "show my library" → call list_documents.
+- WHENEVER the user asks to "show", "read", "open", or "summarize" a specific document → call get_document (call list_documents first if you don't know the id).
+- WHENEVER the user asks to "delete" or "remove" a document → confirm the name, then call delete_document.
+- Always produce high-quality, well-structured markdown for the content parameter of create_document / update_document.
 
 CONTENT RULES:
 1. Only handle technical topics (AWS, Cloud, DevOps, Programming, etc.).
 2. Non-technical requests should be politely declined.
 3. Be helpful, professional, and beginner-friendly.
-4. Always use Markdown formatting in your replies.
+4. Always use Markdown formatting in your text replies.
 `;
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Original single-turn helper — UNCHANGED, used by all existing endpoints
-// ─────────────────────────────────────────────────────────────────────────────
-export const askGemini = async (prompt, retryCount = 0) => {
-  try {
-    const model = genAI.getGenerativeModel({
-      model: "gemma-4-26b-a4b-it",
-      systemInstruction: SYSTEM_PROMPT,
-    });
+// ─── Convert Gemini-style tool declarations → OpenAI-style function tools ────
 
-    const result = await model.generateContent({
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
-      generationConfig: {
-        thinkingBudget: 0, // Explicitly sets the thinking budget to zero
-      }
-    });
-    let textResponse = result.response.text();
+/**
+ * documentToolDeclarations uses Gemini schema (OBJECT / STRING / NUMBER).
+ * OpenRouter expects OpenAI schema (object / string / number).
+ * This converter normalises the casing.
+ */
+function toOpenAITools(declarations) {
+  return declarations.map((decl) => ({
+    type: "function",
+    function: {
+      name: decl.name,
+      description: decl.description,
+      parameters: normaliseSchema(decl.parameters),
+    },
+  }));
+}
 
-    // Remove the empty thought tags if they appear
-    textResponse = textResponse.replace(/<\|channel>thought\n<channel\|>/g, '').trim();
-    return textResponse;
-  } catch (error) {
-    // If we run into a 503 Service Unavailable, switch to the 1.5-flash model
-    if (error.status === 503 && retryCount === 0) {
-      console.warn(
-        "gemini-2.5-flash is experiencing high demand. Falling back to gemini-1.5-flash...",
-      );
-      return askGemini(prompt, 1);
-    }
-    throw error;
+function normaliseSchema(schema) {
+  if (!schema || typeof schema !== "object") return schema;
+  const result = { ...schema };
+  if (result.type) result.type = result.type.toLowerCase();
+  if (result.properties) {
+    result.properties = Object.fromEntries(
+      Object.entries(result.properties).map(([k, v]) => [k, normaliseSchema(v)])
+    );
   }
-};
+  if (result.items) result.items = normaliseSchema(result.items);
+  return result;
+}
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Agentic multi-turn loop with function calling (document tools)
-//
-// @param {string} username  - the authenticated user (injected by controller)
-// @param {Array}  history   - array of { role: "user"|"model", parts: [...] }
-//                             The caller appends the latest user message before
-//                             passing the history in.
-// @returns {string} finalText - the assistant's natural-language reply
-// ─────────────────────────────────────────────────────────────────────────────
-export const runAgentLoop = async (username, history, systemContext = "") => {
-  const MAX_TOOL_ROUNDS = 5; // safety guard against infinite loops
+const OPENAI_TOOLS = toOpenAITools(documentToolDeclarations);
 
-  // Prepend the system context if provided to help the model understand the current state
-  let effectiveSystemPrompt = AGENT_SYSTEM_PROMPT;
-  if (systemContext) {
-    effectiveSystemPrompt += `\n\nCURRENT CONTEXT:\n${systemContext}\n`;
-  }
+// ─── Core OpenRouter request helper ──────────────────────────────────────────
 
-  const model = genAI.getGenerativeModel({
-    model: "gemma-4-26b-a4b-it",
-    systemInstruction: effectiveSystemPrompt,
-    tools: [{ functionDeclarations: documentToolDeclarations }],
-  });
+/**
+ * Makes a chat completion request to OpenRouter, trying each model in order
+ * until one succeeds.  Returns the full response data object.
+ *
+ * @param {Array}   messages  – OpenAI-format message array
+ * @param {Object}  options   – extra body params (tools, tool_choice, …)
+ */
+async function openRouterChat(messages, options = {}) {
+  let lastError;
+  for (const model of FREE_MODELS) {
+    try {
+      const body = {
+        model,
+        messages,
+        temperature: 0.7,
+        max_tokens: 8192,
+        ...options,
+      };
 
-  // Start a chat session with the provided history so the model has context
-  const chat = model.startChat({ history: history.slice(0, -1) }); // all but the last user message
-
-  // Send the latest user message to kick off the loop
-  const lastUserMessage = history[history.length - 1];
-  let response = await chat.sendMessage(lastUserMessage.parts);
-
-  for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
-    const candidate = response.response.candidates?.[0];
-    if (!candidate) break;
-
-    const parts = candidate.content?.parts ?? [];
-
-    // Check if Gemini wants to call a tool
-    const functionCallPart = parts.find((p) => p.functionCall);
-    if (!functionCallPart) {
-      // No more tool calls — return the text response
-      break;
-    }
-
-    const { name, args } = functionCallPart.functionCall;
-    console.log(`[AgentLoop] Tool called: ${name}`, args);
-
-    // Execute the tool handler
-    const handler = toolHandlers[name];
-    let toolResult;
-    if (handler) {
-      toolResult = await handler(args, username);
-    } else {
-      toolResult = { success: false, error: `Unknown tool: ${name}` };
-    }
-
-    console.log(`[AgentLoop] Tool result for ${name}:`, toolResult);
-
-    // Send the function result back to Gemini
-    response = await chat.sendMessage([
-      {
-        functionResponse: {
-          name,
-          response: toolResult,
-        },
-      },
-    ]);
-  }
-
-  // Extract the final text from the last response
-  const finalText = response.response.text();
-  
-  // Track which tools were called (for frontend refresh logic)
-  const toolsUsed = [];
-  try {
-    const historyEntries = await chat.getHistory();
-    historyEntries.forEach(entry => {
-      entry.parts.forEach(part => {
-        if (part.functionCall) {
-          toolsUsed.push(part.functionCall.name);
-        }
+      const response = await axios.post(`${OR_BASE_URL}/chat/completions`, body, {
+        headers: OR_HEADERS,
+        timeout: 90_000,
       });
-    });
-  } catch (err) {
-    console.warn("[runAgentLoop] Error extracting history for toolsUsed:", err.message);
+
+      console.log(`[OpenRouter] ✓ Model used: ${model}`);
+      return response.data;
+    } catch (err) {
+      const status = err.response?.status;
+      const errMsg = err.response?.data?.error?.message || err.message;
+      console.warn(`[OpenRouter] ✗ Model ${model} failed (${status}): ${errMsg}`);
+      lastError = err;
+      // Only fall through to next model on rate-limit / overload errors
+      const retryable = status === 429 || status === 502 || status === 503 || !status;
+      if (!retryable) throw err;
+    }
+  }
+  throw lastError;
+}
+
+// ─── Response cleaner (used by both askGemini and runAgentLoop) ──────────────
+
+/**
+ * Strips model-specific noise from a text response:
+ *  - <think>…</think> reasoning blocks (Qwen3, DeepSeek, Nemotron)
+ *  - Gemma channel tags
+ *  - Markdown code fences wrapping bare JSON (for quiz responses)
+ */
+function cleanResponse(text) {
+  if (!text) return "";
+  text = text.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
+  text = text.replace(/<\|channel\|>thought\n<channel\|>/g, "").trim();
+  text = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+  return text;
+}
+
+// ─── Public: single-turn helper (summarize / quiz / doubt) ───────────────────
+
+/**
+ * askGemini — drop-in replacement for the old Gemini single-turn call.
+ * Used by notesController for summarize, quiz, and doubt endpoints.
+ * The SYSTEM_PROMPT contains a strict quiz/JSON rule so quiz responses
+ * come back as raw JSON arrays without any wrapping text.
+ *
+ * @param {string} prompt
+ * @returns {string} cleaned text response
+ */
+export const askGemini = async (prompt) => {
+  const data = await openRouterChat([
+    { role: "system", content: SYSTEM_PROMPT },
+    { role: "user",   content: prompt },
+  ]);
+
+  const text = data.choices?.[0]?.message?.content ?? "";
+  return cleanResponse(text);
+};
+
+// ─── Public: agentic multi-turn loop with function calling ───────────────────
+
+/**
+ * runAgentLoop — replaces the old Gemini function-calling loop.
+ * Converts Gemini-style history to OpenAI messages, executes tool calls
+ * via documentToolHandlers, and returns { finalText, toolsUsed }.
+ *
+ * @param {string} username      – authenticated user (injected by controller)
+ * @param {Array}  history       – Gemini-style [{ role, parts: [{text}] }]
+ * @param {string} systemContext – optional context appended to system prompt
+ * @returns {{ finalText: string, toolsUsed: string[] }}
+ */
+export const runAgentLoop = async (username, history, systemContext = "") => {
+  const MAX_TOOL_ROUNDS = 5;
+
+  // Build effective system prompt
+  let sysContent = AGENT_SYSTEM_PROMPT;
+  if (systemContext) {
+    sysContent += `\n\nCURRENT CONTEXT:\n${systemContext}\n`;
   }
 
-  return { finalText, toolsUsed };
+  // Convert Gemini history format → OpenAI messages
+  // Gemini: [{ role: "user"|"model", parts: [{ text }|{ functionCall }|{ functionResponse }] }]
+  // OpenAI: [{ role: "user"|"assistant"|"tool", content, tool_calls?, tool_call_id? }]
+  const messages = [{ role: "system", content: sysContent }];
+  for (const entry of history) {
+    convertGeminiEntry(entry, messages);
+  }
+
+  const toolsUsed = [];
+
+  for (let round = 0; round <= MAX_TOOL_ROUNDS; round++) {
+    const data = await openRouterChat(messages, {
+      tools: OPENAI_TOOLS,
+      tool_choice: "auto",
+    });
+
+    const choice = data.choices?.[0];
+    if (!choice) break;
+
+    const assistantMsg = choice.message;
+    messages.push(assistantMsg); // add assistant turn to history
+
+    // Check if the model wants to call tools
+    const toolCalls = assistantMsg.tool_calls;
+    if (!toolCalls || toolCalls.length === 0) {
+      // No tool calls — we have the final answer
+      return {
+        finalText: cleanResponse(assistantMsg.content ?? ""),
+        toolsUsed,
+      };
+    }
+
+    if (round === MAX_TOOL_ROUNDS) {
+      // Safety guard — return whatever text we have
+      return {
+        finalText: cleanResponse(assistantMsg.content ?? "I've reached the maximum number of tool calls."),
+        toolsUsed,
+      };
+    }
+
+    // Execute each tool call and append results
+    for (const tc of toolCalls) {
+      const { id: toolCallId, function: fn } = tc;
+      const fnName = fn.name;
+      let args;
+      try {
+        args = JSON.parse(fn.arguments);
+      } catch {
+        args = {};
+      }
+
+      console.log(`[AgentLoop] Tool called: ${fnName}`, args);
+      toolsUsed.push(fnName);
+
+      const handler = toolHandlers[fnName];
+      let toolResult;
+      if (handler) {
+        toolResult = await handler(args, username);
+      } else {
+        toolResult = { success: false, error: `Unknown tool: ${fnName}` };
+      }
+
+      console.log(`[AgentLoop] Tool result for ${fnName}:`, toolResult);
+
+      messages.push({
+        role: "tool",
+        tool_call_id: toolCallId,
+        content: JSON.stringify(toolResult),
+      });
+    }
+  }
+
+  return { finalText: "The agent loop ended without a final response.", toolsUsed };
 };
+
+// ─── Helper: convert a single Gemini history entry to OpenAI messages ────────
+
+function convertGeminiEntry(entry, messages) {
+  const role = entry.role === "model" ? "assistant" : entry.role; // "user" stays "user"
+  const parts = entry.parts ?? [];
+
+  for (const part of parts) {
+    if (part.text !== undefined) {
+      messages.push({ role, content: part.text });
+    } else if (part.functionCall) {
+      // Gemini model calling a tool → OpenAI assistant message with tool_calls
+      messages.push({
+        role: "assistant",
+        content: null,
+        tool_calls: [
+          {
+            id: `call_${Date.now()}`,
+            type: "function",
+            function: {
+              name: part.functionCall.name,
+              arguments: JSON.stringify(part.functionCall.args ?? {}),
+            },
+          },
+        ],
+      });
+    } else if (part.functionResponse) {
+      // Gemini function result → OpenAI tool message
+      messages.push({
+        role: "tool",
+        tool_call_id: `call_${Date.now()}`,
+        content: JSON.stringify(part.functionResponse.response ?? {}),
+      });
+    }
+  }
+}
