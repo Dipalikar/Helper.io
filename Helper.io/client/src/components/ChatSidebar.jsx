@@ -12,7 +12,7 @@ import {
 import Markdown from "react-markdown";
 import { AiOutlineAliwangwang } from "react-icons/ai";
 
-const ChatSidebar = ({ isOpen, onClose, topic, file, file_key, inline = false }) => {
+const ChatSidebar = ({ isOpen, onClose, topic, file, file_key, inline = false, onActionSuccess }) => {
   const [messages, setMessages] = useState([
     {
       id: 1,
@@ -28,6 +28,10 @@ const ChatSidebar = ({ isOpen, onClose, topic, file, file_key, inline = false })
   const [score, setScore] = useState(0);
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef(null);
+
+  // ── Agentic-mode conversation history (Gemini {role, parts} format) ─────────
+  // Only maintained when in general / no-document mode (agentic path).
+  const [agentHistory, setAgentHistory] = useState([]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -47,6 +51,7 @@ const ChatSidebar = ({ isOpen, onClose, topic, file, file_key, inline = false })
     setSelectedAnswer(null);
     setShowResult(false);
     setScore(0);
+    setAgentHistory([]); // also reset agent conversation history
   };
 
   const handleAnswer = (option) => {
@@ -84,10 +89,26 @@ const ChatSidebar = ({ isOpen, onClose, topic, file, file_key, inline = false })
     scrollToBottom();
   }, [messages, isTyping]);
 
+  const lastDocRef = useRef({ file, file_key, topic });
+
   useEffect(() => {
-    resetChat();
+    const isTopicChange = topic !== lastDocRef.current.topic;
+    const isFileChange = file !== lastDocRef.current.file;
+    const isKeyChange = file_key !== lastDocRef.current.file_key;
+
+    // Only reset if we actually have new document info and it corresponds to a DIFFERENT document
+    // We ignore cases where the new info is null (loading state) to prevent transient resets
+    if ( (file_key && isKeyChange) || 
+         (!file_key && file && (isFileChange || isTopicChange)) ) {
+      resetChat();
+    }
+
+    if (file || file_key || topic) {
+      lastDocRef.current = { file, file_key, topic };
+    }
   }, [file, file_key, topic]);
 
+  // ── Routing helpers (existing document-based paths) ───────────────────────
   const getApiEndpoint = (type) => {
     if (file_key) {
       return `http://localhost:5000/api/notes/ai/${type}`;
@@ -105,6 +126,20 @@ const ChatSidebar = ({ isOpen, onClose, topic, file, file_key, inline = false })
     return { ...extraParams };
   };
 
+  // ── Username helper (decoded from JWT stored in localStorage) ────────────
+  const getUsername = () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return null;
+      // Simple JWT payload decode (no verification needed on client)
+      const payload = JSON.parse(atob(token.split(".")[1]));
+      return payload.username || null;
+    } catch {
+      return null;
+    }
+  };
+
+  // ── Main send handler ─────────────────────────────────────────────────────
   const handleSend = async (text) => {
     if (!text.trim()) return;
 
@@ -115,34 +150,66 @@ const ChatSidebar = ({ isOpen, onClose, topic, file, file_key, inline = false })
 
     try {
       let responseText = "";
+
+      // ── SMART ROUTING ──────────────────────────────────────────────────
       const lowerText = text.toLowerCase();
+      const isShortcut = (file || file_key) && (lowerText.includes("summarize") || lowerText.includes("quiz"));
 
-      if (lowerText.includes("summarize")) {
-        const res = await axios.post(getApiEndpoint("summarize"), getPayload());
-        responseText = res.data.summary;
-      } else if (lowerText.includes("quiz")) {
-        const res = await axios.post(getApiEndpoint("quiz"), getPayload());
-        let quizData = res.data.quiz;
+      if (isShortcut) {
+        if (lowerText.includes("summarize")) {
+          const res = await axios.post(getApiEndpoint("summarize"), getPayload());
+          responseText = res.data.summary;
+        } else if (lowerText.includes("quiz")) {
+          const res = await axios.post(getApiEndpoint("quiz"), getPayload());
+          let quizData = res.data.quiz;
 
-        if (typeof quizData === "string") {
-          quizData = quizData
-            .replace(/```json/g, "")
-            .replace(/```/g, "")
-            .trim();
+          if (typeof quizData === "string") {
+            quizData = quizData.replace(/```json/g, "").replace(/```/g, "").trim();
+            quizData = JSON.parse(quizData);
+          }
 
-          quizData = JSON.parse(quizData);
+          setQuiz(quizData);
+          setCurrentQuestion(0);
+          setScore(0);
+          setSelectedAnswer(null);
+          setShowResult(false);
+          responseText = "🧠 Quiz started! Answer the questions below.";
         }
-
-        setQuiz(quizData);
-        setCurrentQuestion(0);
-        setScore(0);
-        setSelectedAnswer(null);
-        setShowResult(false);
-
-        responseText = "🧠 Quiz started! Answer the questions below.";
       } else {
-        const res = await axios.post(getApiEndpoint("doubt"), getPayload({ question: text }));
-        responseText = res.data.answer;
+        // ── AGENT MODE: Used for everything else (even when document is open) ──
+        const username = getUsername();
+        if (!username) {
+          responseText = "⚠️ You need to be signed in to use the AI assistant.";
+        } else {
+          const newUserEntry = { role: "user", parts: [{ text }] };
+          const updatedHistory = [...agentHistory, newUserEntry];
+
+          const res = await axios.post("http://localhost:5000/api/agent/chat", {
+            username,
+            history: updatedHistory,
+            // Include document context if available
+            topic,
+            file,
+            file_key,
+          });
+
+          responseText = res.data.reply;
+          const toolsUsed = res.data.toolsUsed || [];
+
+          // If any state-changing tools were used, notify the parent component
+          if (onActionSuccess) {
+            const stateChangingTools = ["create_document", "update_document", "delete_document"];
+            const wasModified = toolsUsed.some(tool => stateChangingTools.includes(tool));
+            if (wasModified) {
+              onActionSuccess();
+            }
+          }
+
+          setAgentHistory([
+            ...updatedHistory,
+            { role: "model", parts: [{ text: responseText }] },
+          ]);
+        }
       }
 
       const aiMsg = {
@@ -165,6 +232,7 @@ const ChatSidebar = ({ isOpen, onClose, topic, file, file_key, inline = false })
       setIsTyping(false);
     }
   };
+
   const handleQuickAction = (action) => {
     handleSend(action);
   };
@@ -194,8 +262,8 @@ const ChatSidebar = ({ isOpen, onClose, topic, file, file_key, inline = false })
               <AiOutlineAliwangwang size={20} />
             </div>
             <div>
-              <h2 className="font-bold text-slate-800 text-lg">AI Assistant</h2>
-              <p className="text-xs text-slate-500">Always here to help</p>
+              <h2 className="font-bold text-slate-800 text-lg">ALKA</h2>
+              <p className="text-xs text-slate-500">AI Learning & Knowledge Assistant</p>
             </div>
           </div>
           <button
@@ -210,12 +278,12 @@ const ChatSidebar = ({ isOpen, onClose, topic, file, file_key, inline = false })
         </div>
 
         {/* Chat Area */}
-        <div className="flex-1 overflow-y-auto p-4 bg-slate-50 flex flex-col gap-4">
+        <div className="flex-1 overflow-y-auto p-2 bg-slate-50 flex flex-col gap-4">
           {/* Messages */}
           {messages.map((msg) => (
             <div
               key={msg.id}
-              className={`flex gap-3 max-w-[85%] ${msg.role === "user" ? "ml-auto flex-row-reverse" : "mr-auto"}`}
+              className={`flex gap-2 max-w-[90%] ${msg.role === "user" ? "ml-auto flex-row-reverse" : "mr-auto"}`}
             >
               <div
                 className={`shrink-0 w-8 h-8 flex items-center justify-center rounded-full mt-1 ${
@@ -227,7 +295,7 @@ const ChatSidebar = ({ isOpen, onClose, topic, file, file_key, inline = false })
                 {msg.role === "user" ? <User size={16} /> : <AiOutlineAliwangwang size={24} />}
               </div>
               <div
-                className={`p-3 rounded-2xl text-sm leading-relaxed break-words overflow-hidden ${
+                className={`p-2 rounded-2xl text-sm leading-relaxed break-words overflow-hidden ${
                   msg.role === "user"
                     ? "bg-slate-800 text-white rounded-tr-sm"
                     : "bg-white border border-slate-100 shadow-sm text-slate-700 rounded-tl-sm"
@@ -324,6 +392,7 @@ const ChatSidebar = ({ isOpen, onClose, topic, file, file_key, inline = false })
 
         {/* Input Area */}
         <div className="p-4 bg-white border-t border-slate-100">
+          {/* ── Quick actions for DOCUMENT mode (existing, unchanged) ── */}
           {!isTyping && !quiz && (file || file_key) && (
             <div className="flex flex-wrap gap-2 mb-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
               <button
@@ -346,6 +415,31 @@ const ChatSidebar = ({ isOpen, onClose, topic, file, file_key, inline = false })
               </button>
             </div>
           )}
+
+          {/* ── Quick actions for AGENT mode (no document open) ── */}
+          {!isTyping && !quiz && !file && !file_key && (
+            <div className="flex flex-wrap gap-2 mb-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <button
+                onClick={() => handleQuickAction("Create a new document for me.")}
+                className="flex items-center gap-1.5 text-[10px] md:text-xs bg-slate-50 border border-slate-200 hover:border-[#032068] hover:bg-[#032068]/5 text-slate-600 hover:text-[#032068] px-2.5 py-1.5 rounded-full transition-all shadow-sm"
+              >
+                <FileText size={12} /> Create Doc
+              </button>
+              <button
+                onClick={() => handleQuickAction("Show me a list of all my documents.")}
+                className="flex items-center gap-1.5 text-[10px] md:text-xs bg-slate-50 border border-slate-200 hover:border-[#036819] hover:bg-[#036819]/5 text-slate-600 hover:text-[#036819] px-2.5 py-1.5 rounded-full transition-all shadow-sm"
+              >
+                <BrainCircuit size={12} /> List Docs
+              </button>
+              <button
+                onClick={() => handleQuickAction("I have a technical question.")}
+                className="flex items-center gap-1.5 text-[10px] md:text-xs bg-slate-50 border border-slate-200 hover:border-[#f4ad5e] hover:bg-[#f4ad5e]/5 text-slate-600 hover:text-[#f4ad5e] px-2.5 py-1.5 rounded-full transition-all shadow-sm"
+              >
+                <HelpCircle size={12} /> Ask Anything
+              </button>
+            </div>
+          )}
+
           <form
             onSubmit={(e) => {
               e.preventDefault();

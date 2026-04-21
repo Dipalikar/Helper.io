@@ -105,14 +105,14 @@ const MyNotes = () => {
     navigate(`/notes/${encodeURIComponent(note.title)}`);
   };
 
-  const resolveNoteContent = async (note) => {
-    if (note.content) {
+  const resolveNoteContent = async (note, force = false) => {
+    if (note.content && !force) {
       setSelectedNote(note);
       return;
     }
     
     setIsNoteLoading(true);
-    setSelectedNote(null);
+    if (!force) setSelectedNote(null);
     
     try {
       const { data } = await axios.get(`http://localhost:5000/api/notes/content?file_key=${encodeURIComponent(note.file_key)}`);
@@ -326,6 +326,12 @@ const MyNotes = () => {
           onClose={() => setIsChatOpen(false)} 
           inline={true}
           file_key={selectedNote?.file_key}
+          onActionSuccess={() => {
+            fetchNotes(username);
+            if (selectedNote) {
+              resolveNoteContent(selectedNote, true);
+            }
+          }}
         />
       </div>
     </div>

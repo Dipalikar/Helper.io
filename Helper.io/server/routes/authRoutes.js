@@ -2,6 +2,7 @@ import express from "express";
 import { userAdd, userVerify, getDoc, getSummarize, getQuiz, getDoubt } from "../controller/authController.js";
 import { uploadNote, getNotes, getNoteContent, deleteNote, getUserSummarize, getUserQuiz, getUserDoubt } from "../controller/notesController.js";
 import { getComments, addComment, deleteComment } from "../controller/commentController.js";
+import { agentChat } from "../controller/agentController.js";
 import { limiter } from "../middleware/rateLimiters.js";
 
 const authRouter = express.Router();
@@ -26,5 +27,8 @@ authRouter.post("/notes/ai/doubt", getUserDoubt);
 authRouter.get("/comments", getComments);
 authRouter.post("/comments", addComment);
 authRouter.delete("/comments", deleteComment);
+
+// Agentic document management route
+authRouter.post("/agent/chat", agentChat);
 
 export default authRouter;
