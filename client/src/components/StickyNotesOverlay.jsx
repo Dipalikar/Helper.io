@@ -3,6 +3,7 @@ import axios from "axios";
 import { Trash2, MessageSquare, Plus, X } from "lucide-react";
 import toast from "react-hot-toast";
 import { jwtDecode } from "jwt-decode";
+import { API_URL } from "../lib/config";
 
 const StickyNotesOverlay = ({ document_key, containerRef }) => {
   const [comments, setComments] = useState([]);
@@ -25,7 +26,7 @@ const StickyNotesOverlay = ({ document_key, containerRef }) => {
   const fetchComments = useCallback(async () => {
     if (!document_key || !username) return;
     try {
-      const { data } = await axios.get(`http://localhost:5000/api/comments?document_key=${encodeURIComponent(document_key)}&username=${encodeURIComponent(username)}`);
+      const { data } = await axios.get(`${API_URL}/comments?document_key=${encodeURIComponent(document_key)}&username=${encodeURIComponent(username)}`);
       if (data.success) {
         setComments(data.comments);
       }
@@ -90,7 +91,7 @@ const StickyNotesOverlay = ({ document_key, containerRef }) => {
     if (!commentText.trim()) return;
     const toastId = toast.loading("Adding comment...");
     try {
-      const { data } = await axios.post("http://localhost:5000/api/comments", {
+      const { data } = await axios.post(`${API_URL}/comments`, {
         username,
         document_key,
         y_position: newCommentPos,
@@ -110,7 +111,7 @@ const StickyNotesOverlay = ({ document_key, containerRef }) => {
 
   const handleDeleteComment = async (id) => {
     try {
-      const { data } = await axios.delete("http://localhost:5000/api/comments", {
+      const { data } = await axios.delete(`${API_URL}/comments`, {
         data: { id, username }
       });
       if (data.success) {

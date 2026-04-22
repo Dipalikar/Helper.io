@@ -1,11 +1,12 @@
 import axios from "axios";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
+import { API_URL } from "../config";
 
 export const signUpFunc = async (sanitizedForm, navigate) => {
   try {
     const { data } = await axios.post(
-      "http://localhost:5000/api/sign-up",
+      `${API_URL}/sign-up`,
       sanitizedForm,
       {
         headers: {
@@ -46,7 +47,7 @@ export const signInFunc = async (sanitizedForm, navigate) => {
     navigate("/dashboard");
   }
   try {
-    const { data } = await axios.get("http://localhost:5000/api/sign-in", {
+    const { data } = await axios.get(`${API_URL}/sign-in`, {
       params: sanitizedForm, // <-- SENDS DATA
       headers: {
         "Content-Type": "application/json",

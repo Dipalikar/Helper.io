@@ -9,6 +9,7 @@ import { FileText, Loader2, Link as LinkIcon } from "lucide-react";
 import mermaid from "mermaid";
 import { atomOneLight } from "react-syntax-highlighter/dist/esm/styles/hljs";
 import StickyNotesOverlay from "./StickyNotesOverlay";
+import { API_URL } from "../lib/config";
 
 // Initialize Mermaid
 mermaid.initialize({
@@ -45,7 +46,7 @@ export default function DocumentViewer({ topic, file }) {
       setLoading(true);
       try {
         const { data } = await axios.get(
-          `http://localhost:5000/api/notes-docs/${topic}/${file}`
+          `${API_URL}/notes-docs/${topic}/${file}`
         );
         setContent(data);
       } catch (err) {

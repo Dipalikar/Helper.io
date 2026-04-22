@@ -12,6 +12,7 @@ import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { atomOneLight } from "react-syntax-highlighter/dist/esm/styles/hljs";
 import toast from "react-hot-toast";
 import axios from "axios";
+import { API_URL } from "../lib/config";
 
 const MyNotes = () => {
   const navigate = useNavigate();
@@ -55,7 +56,7 @@ const MyNotes = () => {
 
   const fetchNotes = async (user) => {
     try {
-      const { data } = await axios.get(`http://localhost:5000/api/notes/list?username=${user}`);
+      const { data } = await axios.get(`${API_URL}/notes/list?username=${user}`);
       if (data.success) {
         setNotes(data.notes);
       }
@@ -80,7 +81,7 @@ const MyNotes = () => {
       
       const uploadToast = toast.loading("Uploading note...");
       try {
-        const { data } = await axios.post("http://localhost:5000/api/notes/upload", {
+        const { data } = await axios.post(`${API_URL}/notes/upload`, {
           username,
           title,
           content
@@ -115,7 +116,7 @@ const MyNotes = () => {
     if (!force) setSelectedNote(null);
     
     try {
-      const { data } = await axios.get(`http://localhost:5000/api/notes/content?file_key=${encodeURIComponent(note.file_key)}`);
+      const { data } = await axios.get(`${API_URL}/notes/content?file_key=${encodeURIComponent(note.file_key)}`);
       if (data.success) {
         const updatedNote = { ...note, content: data.content };
         setSelectedNote(updatedNote);
@@ -131,7 +132,7 @@ const MyNotes = () => {
   const handleDelete = async (e, id, file_key) => {
     e.stopPropagation();
     try {
-      const { data } = await axios.delete("http://localhost:5000/api/notes/delete", {
+      const { data } = await axios.delete(`${API_URL}/notes/delete`, {
         data: { id, file_key }
       });
       if (data.success) {

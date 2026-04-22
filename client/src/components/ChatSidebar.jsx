@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import Markdown from "react-markdown";
 import { AiOutlineAliwangwang } from "react-icons/ai";
+import { BASE_URL, API_URL } from "../lib/config";
 
 const ChatSidebar = ({ isOpen, onClose, topic, file, file_key, inline = false, onActionSuccess }) => {
   const [messages, setMessages] = useState([
@@ -111,9 +112,9 @@ const ChatSidebar = ({ isOpen, onClose, topic, file, file_key, inline = false, o
   // ── Routing helpers (existing document-based paths) ───────────────────────
   const getApiEndpoint = (type) => {
     if (file_key) {
-      return `http://localhost:5000/api/notes/ai/${type}`;
+      return `${API_URL}/notes/ai/${type}`;
     }
-    return `http://localhost:5000/api/ai/${type}`;
+    return `${API_URL}/ai/${type}`;
   };
 
   const getPayload = (extraParams = {}) => {
@@ -184,7 +185,7 @@ const ChatSidebar = ({ isOpen, onClose, topic, file, file_key, inline = false, o
           const newUserEntry = { role: "user", parts: [{ text }] };
           const updatedHistory = [...agentHistory, newUserEntry];
 
-          const res = await axios.post("http://localhost:5000/api/agent/chat", {
+          const res = await axios.post(`${API_URL}/agent/chat`, {
             username,
             history: updatedHistory,
             // Include document context if available
