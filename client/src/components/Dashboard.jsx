@@ -58,22 +58,22 @@ const Dashboard = () => {
 
       <main className="max-w-7xl mx-auto px-6 py-12">
         {/* Hero Section */}
-        <section className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-[#032068] to-[#0a369d] p-8 md:p-16 text-white mb-20 shadow-2xl">
+        <section className="relative overflow-hidden rounded-[2rem] md:rounded-[2.5rem] bg-gradient-to-br from-[#032068] to-[#0a369d] p-8 md:p-16 text-white mb-12 md:mb-20 shadow-2xl">
           <div className="relative z-10 max-w-2xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-white/90 text-xs font-bold uppercase tracking-wider mb-6">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-white/90 text-[10px] md:text-xs font-bold uppercase tracking-wider mb-6">
               <AiOutlineAliwangwang size={14} className="text-yellow-400" />
               Welcome Back
             </div>
-            <h1 className="text-4xl md:text-6xl font-extrabold mb-6 tracking-tight leading-tight">
+            <h1 className="text-3xl md:text-6xl font-extrabold mb-4 md:mb-6 tracking-tight leading-tight">
               Hi, {decoded?.username || "Learner"}! <br />
               <span className="text-blue-200">What are we building today?</span>
             </h1>
-            <p className="text-lg md:text-xl text-blue-100/80 mb-10 max-w-lg font-medium leading-relaxed">
+            <p className="text-base md:text-xl text-blue-100/80 mb-8 md:mb-10 max-w-lg font-medium leading-relaxed">
               Continue your journey through our curated learning paths and master the latest technologies with AI assistance.
             </p>
             <Link
               to="/topics"
-              className="inline-flex items-center gap-2 bg-white text-[#032068] px-8 py-4 rounded-2xl font-bold text-lg hover:bg-blue-50 transition-all hover:scale-105 shadow-lg decoration-transparent"
+              className="inline-flex items-center gap-2 bg-white text-[#032068] px-6 py-3 md:px-8 md:py-4 rounded-xl md:rounded-2xl font-bold text-base md:text-lg hover:bg-blue-50 transition-all hover:scale-105 shadow-lg decoration-transparent w-full sm:w-auto justify-center"
             >
               Explore All Topics
               <ArrowRight size={20} />
@@ -81,12 +81,12 @@ const Dashboard = () => {
           </div>
 
           {/* Abstract background blobs */}
-          <div className="absolute top-0 right-0 -mr-20 -mt-20 w-96 h-96 bg-blue-400/20 rounded-full blur-[100px]"></div>
-          <div className="absolute bottom-0 right-0 mr-40 mb-10 hidden lg:block">
+          <div className="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 md:w-96 md:h-96 bg-blue-400/20 rounded-full blur-[100px]"></div>
+          <div className="absolute bottom-0 right-0 mr-10 md:mr-40 mb-10 hidden lg:block">
             <img 
               src={dashboardImg} 
               alt="Hero Illustration" 
-              className="w-[450px] drop-shadow-2xl animate-float"
+              className="w-[300px] md:w-[450px] drop-shadow-2xl animate-float"
             />
           </div>
         </section>

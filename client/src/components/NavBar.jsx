@@ -18,6 +18,7 @@ const NavBar = ({ toggleChatSidebar }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -39,17 +40,17 @@ const NavBar = ({ toggleChatSidebar }) => {
   ];
 
   return (
-    <nav className="flex flex-row justify-between h-20 w-full items-center">
+    <nav className="flex flex-row justify-between h-20 w-full items-center relative">
       {/* Brand Section */}
-      <div className="flex items-center gap-8">
+      <div className="flex items-center gap-4 md:gap-8">
         <Link
           to="/dashboard"
           className="flex items-center gap-2 group decoration-transparent"
         >
-          <div className="bg-[#032068] p-2 rounded-xl transition-transform group-hover:scale-110">
+          <div className="bg-[#032068] p-2 rounded-xl transition-transform group-hover:scale-110 shrink-0">
             <img src={icon} className="w-6 h-6 invert" alt="Logo" />
           </div>
-          <span className="text-2xl font-bold text-[#032068] tracking-tight">
+          <span className="text-xl md:text-2xl font-bold text-[#032068] tracking-tight truncate">
             Helper.io
           </span>
         </Link>
@@ -74,49 +75,65 @@ const NavBar = ({ toggleChatSidebar }) => {
       </div>
 
       {/* Right Section: Chat & Profile */}
-      <div className="flex items-center gap-5">
+      <div className="flex items-center gap-2 md:gap-5">
         <button
           onClick={handleToggleCommentMode}
-          className="p-2.5 rounded-full hover:bg-yellow-100 transition-colors relative"
+          className="p-2 rounded-full hover:bg-yellow-100 transition-colors relative"
           title="Add Sticky Note Comment"
         >
-          <StickyNote className="w-8 h-8 text-[#036819]" />
+          <StickyNote className="w-6 h-6 md:w-8 md:h-8 text-[#036819]" />
         </button>
 
         <button
           onClick={toggleChatSidebar}
-          className="p-2.5 rounded-full hover:bg-[#e7e8ff] transition-colors relative"
+          className="p-2 rounded-full hover:bg-[#e7e8ff] transition-colors relative"
           title="AI Assistant"
         >
           <AiOutlineAliwangwang
-            className="w-10 h-10 text-[#032068]"
+            className="w-8 h-8 md:w-10 md:h-10 text-[#032068]"
             alt="Chat"
           />
         </button>
 
-        <div className="h-8 w-[1px] bg-slate-200"></div>
+        <div className="hidden sm:block h-8 w-[1px] bg-slate-200"></div>
 
         <div className="relative">
           <button
             onClick={() => setIsProfileOpen(!isProfileOpen)}
             className="flex items-center gap-2 p-1.5 rounded-full hover:bg-slate-50 border border-transparent hover:border-slate-200 transition-all"
           >
-            <div className="w-9 h-9 bg-gradient-to-tr from-[#032068] to-[#2563eb] rounded-full flex items-center justify-center text-white shadow-sm">
-              <User size={20} />
+            <div className="w-8 h-8 md:w-9 md:h-9 bg-gradient-to-tr from-[#032068] to-[#2563eb] rounded-full flex items-center justify-center text-white shadow-sm shrink-0">
+              <User size={18} />
             </div>
             <ChevronDown
-              size={16}
-              className={`text-slate-400 transition-transform duration-200 ${isProfileOpen ? "rotate-180" : ""}`}
+              size={14}
+              className={`text-slate-400 transition-transform duration-200 hidden md:block ${isProfileOpen ? "rotate-180" : ""}`}
             />
           </button>
 
           {isProfileOpen && (
-            <div className="absolute right-0 mt-2 w-56 bg-white border border-slate-100 rounded-2xl shadow-xl py-2 z-50 animate-in fade-in zoom-in-95 duration-100">
+            <div className="absolute right-0 mt-2 w-56 bg-white border border-slate-100 rounded-2xl shadow-xl py-2 z-[60] animate-in fade-in zoom-in-95 duration-100">
               <div className="px-4 py-3 border-b border-slate-50 mb-1">
                 <p className="text-sm font-bold text-slate-800">My Account</p>
                 <p className="text-xs text-slate-500 truncate">
                   Settings & Profile
                 </p>
+              </div>
+
+              {/* Mobile-only links in profile menu if needed, or just regular menu */}
+              <div className="md:hidden">
+                {navLinks.map((link) => (
+                  <Link
+                    key={link.path}
+                    to={link.path}
+                    onClick={() => setIsProfileOpen(false)}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-600 hover:bg-[#f4f5ff] hover:text-[#032068] transition-colors decoration-transparent"
+                  >
+                    {link.icon}
+                    <span>{link.name}</span>
+                  </Link>
+                ))}
+                <div className="h-[1px] bg-slate-50 my-1"></div>
               </div>
 
               <Link

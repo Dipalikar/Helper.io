@@ -4,7 +4,7 @@ import { jwtDecode } from "jwt-decode";
 import NavBar from "./NavBar";
 import ChatSidebar from "./ChatSidebar";
 import StickyNotesOverlay from "./StickyNotesOverlay";
-import { FileText, Trash2, UploadCloud, Loader2 } from "lucide-react";
+import { FileText, Trash2, UploadCloud, Loader2, X } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
@@ -19,6 +19,7 @@ const MyNotes = () => {
   const { noteTitle } = useParams();
   const [notes, setNotes] = useState([]);
   const [selectedNote, setSelectedNote] = useState(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [username, setUsername] = useState("");
   const [isNoteLoading, setIsNoteLoading] = useState(false);
@@ -51,6 +52,10 @@ const MyNotes = () => {
       if (note && (!selectedNote || selectedNote.id !== note.id)) {
         resolveNoteContent(note);
       }
+    }
+    // Automatically close sidebar on mobile when a note is selected
+    if (noteTitle) {
+      setIsSidebarOpen(false);
     }
   }, [notes, noteTitle]);
 
@@ -155,13 +160,24 @@ const MyNotes = () => {
 
   return (
     <div className="h-screen flex flex-col bg-slate-50 relative overflow-hidden">
-      <div className="px-6 bg-white shadow-sm z-10 border-b border-slate-100 flex-shrink-0">
+      <div className="px-4 md:px-6 bg-white shadow-sm z-30 border-b border-slate-100 flex-shrink-0">
         <NavBar toggleChatSidebar={() => setIsChatOpen(!isChatOpen)} />
       </div>
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden relative">
+        {/* Mobile Sidebar Toggle */}
+        <button 
+          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          className="lg:hidden fixed bottom-6 left-6 z-40 bg-[#032068] text-white p-4 rounded-full shadow-2xl hover:scale-110 transition-transform"
+        >
+          {isSidebarOpen ? <X size={24} /> : <FileText size={24} />}
+        </button>
+
         {/* Sidebar / File Explorer */}
-        <div className="w-72 bg-white border-r border-slate-200 flex flex-col overflow-y-auto shadow-[2px_0_10px_rgba(0,0,0,0.02)] z-0">
+        <div className={`
+          fixed inset-y-0 left-0 z-20 w-72 bg-white border-r border-slate-200 flex flex-col shadow-xl lg:shadow-none lg:static lg:translate-x-0 transition-transform duration-300 ease-in-out
+          ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}
+        `}>
           <div className="p-5 border-b border-slate-100 bg-slate-50/30">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
@@ -180,7 +196,7 @@ const MyNotes = () => {
             </div>
           </div>
           
-          <div className="p-4 flex flex-col gap-2">
+          <div className="p-4 flex flex-col gap-2 overflow-y-auto">
             {notes.length === 0 ? (
               <p className="text-sm text-slate-400 text-center mt-4">No notes uploaded yet.</p>
             ) : (
@@ -223,8 +239,16 @@ const MyNotes = () => {
           </div>
         </div>
 
+        {/* Sidebar Overlay for Mobile */}
+        {isSidebarOpen && (
+          <div 
+            className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-10 lg:hidden"
+            onClick={() => setIsSidebarOpen(false)}
+          />
+        )}
+
         {/* Main Content Area */}
-        <div className="flex-1 overflow-y-auto bg-white p-8 relative">
+        <div className="flex-1 overflow-y-auto bg-white p-4 md:p-8 relative">
           {isNoteLoading ? (
             <div className="flex-1 flex flex-col items-center justify-center h-full text-slate-400 gap-4">
                <Loader2 className="animate-spin w-12 h-12 text-[#032068]" />
@@ -232,35 +256,35 @@ const MyNotes = () => {
             </div>
           ) : selectedNote ? (
             <div className="max-w-5xl mx-auto">
-               <div className="bg-white border border-slate-200 shadow-xl rounded-[2.5rem] p-8 md:p-16 mb-12 mx-auto max-w-6xl min-h-full hover:shadow-2xl relative" ref={containerRef}>
+               <div className="bg-white border border-slate-200 shadow-xl rounded-[1.5rem] md:rounded-[2.5rem] p-6 md:p-16 mb-12 mx-auto max-w-6xl min-h-full hover:shadow-2xl relative" ref={containerRef}>
                   <StickyNotesOverlay containerRef={containerRef} document_key={selectedNote.file_key} />
-                  <div className="flex items-center gap-5 border-b border-slate-100 pb-8 mb-10 text-[#032068]">
+                  <div className="flex flex-col sm:flex-row items-center gap-5 border-b border-slate-100 pb-8 mb-10 text-[#032068]">
                     <div className="p-4 bg-gradient-to-br from-[#e7e8ff] to-[#f0f1ff] rounded-2xl shadow-sm">
                       <FileText size={32} className="text-[#032068]" />
                     </div>
-                    <div>
-                      <h1 className="text-4xl font-black tracking-tight m-0 bg-clip-text text-transparent bg-gradient-to-r from-[#032068] to-[#0a36a3]">
+                    <div className="text-center sm:text-left">
+                      <h1 className="text-2xl md:text-4xl font-black tracking-tight m-0 bg-clip-text text-transparent bg-gradient-to-r from-[#032068] to-[#0a36a3]">
                         {selectedNote.title}
                       </h1>
-                      <p className="text-slate-500 text-sm mt-1 font-medium flex items-center gap-2">
+                      <p className="text-slate-500 text-sm mt-1 font-medium flex items-center justify-center sm:justify-start gap-2">
                         Uploaded on {formatDate(selectedNote.created_at || selectedNote.date)}
                       </p>
                     </div>
                   </div>
 
-                  <div className="prose prose-slate prose-lg max-w-none 
-                    prose-p:my-6 prose-p:leading-relaxed text-slate-700
+                  <div className="prose prose-slate prose-sm md:prose-lg max-w-none 
+                    prose-p:my-4 md:prose-p:my-6 prose-p:leading-relaxed text-slate-700
                     prose-headings:text-[#032068] prose-headings:font-bold prose-headings:tracking-tight
-                    prose-h1:text-4xl prose-h1:mt-24 prose-h1:mb-10
-                    prose-h2:text-3xl prose-h2:mt-20 prose-h2:mb-8 prose-h2:border-b prose-h2:border-slate-100 prose-h2:pb-4
-                    prose-h3:text-2xl prose-h3:mt-16 prose-h3:mb-6
-                    prose-h4:text-xl prose-h4:mt-12 prose-h4:mb-4
+                    prose-h1:text-2xl md:prose-h1:text-4xl prose-h1:mt-12 md:prose-h1:mt-24 prose-h1:mb-6 md:prose-h1:mb-10
+                    prose-h2:text-xl md:prose-h2:text-3xl prose-h2:mt-10 md:prose-h2:mt-20 prose-h2:mb-4 md:prose-h2:mb-8 prose-h2:border-b prose-h2:border-slate-100 prose-h2:pb-4
+                    prose-h3:text-lg md:prose-h3:text-2xl prose-h3:mt-8 md:prose-h3:mt-16 prose-h3:mb-4 md:prose-h3:mb-6
+                    prose-h4:text-base md:prose-h4:text-xl prose-h4:mt-6 md:prose-h4:mt-12 prose-h4:mb-3 md:prose-h4:mb-4
                     prose-a:text-[#f4ad5e] prose-a:font-medium prose-a:no-underline hover:prose-a:underline hover:prose-a:text-[#e09b4d]
                     prose-blockquote:border-l-4 prose-blockquote:border-l-[#032068] prose-blockquote:bg-slate-50 prose-blockquote:py-4 prose-blockquote:px-8 prose-blockquote:rounded-r-2xl prose-blockquote:my-10 prose-blockquote:text-slate-600 prose-blockquote:italic
                     prose-strong:text-[#032068] prose-strong:font-bold
-                    prose-code:text-[#036819] prose-code:bg-[#ebf5ed] prose-code:px-2.5 prose-code:py-1 prose-code:rounded-lg prose-code:font-semibold prose-code:text-base
-                    prose-pre:bg-[#1e1e1e] prose-pre:text-slate-50 prose-pre:rounded-3xl prose-pre:shadow-2xl prose-pre:my-12 prose-pre:border prose-pre:border-slate-800
-                    prose-img:rounded-[2rem] prose-img:shadow-2xl prose-img:my-14 prose-img:border prose-img:border-slate-100
+                    prose-code:text-[#036819] prose-code:bg-[#ebf5ed] prose-code:px-2.5 prose-code:py-1 prose-code:rounded-lg prose-code:font-semibold prose-code:text-xs md:prose-code:text-base
+                    prose-pre:bg-[#1e1e1e] prose-pre:text-slate-50 prose-pre:rounded-2xl md:prose-pre:rounded-3xl prose-pre:shadow-2xl prose-pre:my-12 prose-pre:border prose-pre:border-slate-800
+                    prose-img:rounded-[1.5rem] md:prose-img:rounded-[2rem] prose-img:shadow-2xl prose-img:my-14 prose-img:border prose-img:border-slate-100
                     prose-table:w-full prose-table:border-collapse prose-table:my-12 prose-table:rounded-2xl prose-table:overflow-hidden prose-table:shadow-sm
                     prose-thead:bg-[#f1f5f9] prose-th:py-4 prose-th:px-6 prose-th:text-left prose-th:font-bold prose-th:text-[#032068]
                     prose-td:py-4 prose-td:px-6 prose-td:border-b prose-td:border-slate-100
@@ -275,7 +299,7 @@ const MyNotes = () => {
                           const language = match ? match[1] : null;
 
                           return !inline && language ? (
-                            <div className="relative group">
+                            <div className="relative group overflow-x-auto">
                               <div className="absolute right-4 top-4 text-xs font-mono text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity uppercase">
                                 {language}
                               </div>
@@ -303,16 +327,16 @@ const MyNotes = () => {
                </div>
             </div>
           ) : (
-            <div className="h-full flex flex-col items-center justify-center text-center">
+            <div className="h-full flex flex-col items-center justify-center text-center p-6">
               <div 
-                className=" p-12 rounded-[3rem] border-2 border-dashed border-[#032068]/20 flex flex-col items-center justify-center cursor-pointer transition-all max-w-lg mb-6 group"
+                className=" p-6 md:p-12 rounded-[2rem] md:rounded-[3rem] border-2 border-dashed border-[#032068]/20 flex flex-col items-center justify-center cursor-pointer transition-all max-w-lg mb-6 group"
                 onClick={() => document.getElementById("note-upload-main").click()}
               >
                 <div className="bg-white p-6 rounded-full shadow-sm mb-6 group-hover:scale-110 transition-transform">
                   <UploadCloud size={48} className="text-[#032068]" />
                 </div>
-                <h2 className="text-2xl font-bold text-slate-700 mb-3">Upload Personal Notes</h2>
-                <p className="text-slate-500">
+                <h2 className="text-xl md:text-2xl font-bold text-slate-700 mb-3">Upload Personal Notes</h2>
+                <p className="text-sm md:text-base text-slate-500">
                   Drag and drop or click to upload your `.md` or `.txt` files. They will be stored securely on Cloudflare R2!
                 </p>
                 <input id="note-upload-main" type="file" accept=".md,.txt" className="hidden" onChange={handleFileUpload} />

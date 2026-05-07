@@ -5,7 +5,7 @@ import { awsList, pythonList, devOpsList } from "../middleware/doc-list";
 import DocumentViewer from "./DocumentViewer";
 import NavBar from "./NavBar";
 import ChatSidebar from "./ChatSidebar";
-import { ChevronDown, ChevronRight, FileText, Folder, BookOpen } from "lucide-react";
+import { ChevronDown, ChevronRight, FileText, Folder, BookOpen, X } from "lucide-react";
 
 const Topics = () => {
   const navigate = useNavigate();
@@ -15,6 +15,7 @@ const Topics = () => {
   const [currentTopic, setCurrentTopic] = useState(urlTopic || "");
   const [currentFile, setCurrentFile] = useState(urlFile || "");
   const [expandedTopic, setExpandedTopic] = useState(urlTopic || "");
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
 
   useEffect(() => {
@@ -51,8 +52,11 @@ const Topics = () => {
       setCurrentFile("");
     }
 
-    // Automatically close chat when navigating to a new topic or file
+    // Automatically close chat and sidebar when a file is selected (on mobile)
     setIsChatOpen(false);
+    if (urlFile) {
+      setIsSidebarOpen(false);
+    }
   }, [urlTopic, urlFile]);
 
   // SEO: Update page title - set to only topic/file name as requested
@@ -91,13 +95,24 @@ const Topics = () => {
 
   return (
     <div className="h-screen flex flex-col bg-slate-50 relative overflow-hidden">
-      <div className="px-6 bg-white shadow-sm z-10 border-b border-slate-100 flex-shrink-0">
+      <div className="px-4 md:px-6 bg-white shadow-sm z-30 border-b border-slate-100 flex-shrink-0">
         <NavBar toggleChatSidebar={() => setIsChatOpen(!isChatOpen)} />
       </div>
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden relative">
+        {/* Mobile Sidebar Toggle */}
+        <button 
+          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          className="lg:hidden fixed bottom-6 left-6 z-40 bg-[#032068] text-white p-4 rounded-full shadow-2xl hover:scale-110 transition-transform"
+        >
+          {isSidebarOpen ? <X size={24} /> : <Folder size={24} />}
+        </button>
+
         {/* Sidebar / File Explorer */}
-        <div className="w-72 bg-white border-r border-slate-200 flex flex-col overflow-y-auto shadow-[2px_0_10px_rgba(0,0,0,0.02)] z-0">
+        <div className={`
+          fixed inset-y-0 left-0 z-20 w-72 bg-white border-r border-slate-200 flex flex-col shadow-xl lg:shadow-none lg:static lg:translate-x-0 transition-transform duration-300 ease-in-out
+          ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}
+        `}>
           <div className="p-5 border-b border-slate-100 bg-slate-50/30">
             <div className="flex items-center gap-2 mb-1">
               <BookOpen size={20} className="text-[#032068]" />
@@ -106,7 +121,7 @@ const Topics = () => {
             <p className="text-xs text-slate-500">Explore learning resources</p>
           </div>
           
-          <div className="p-4 flex flex-col gap-2">
+          <div className="p-4 flex flex-col gap-2 overflow-y-auto">
             {['aws', 'python', 'devops'].map((topicKey) => {
               const isExpanded = expandedTopic === topicKey;
               return (
@@ -161,19 +176,27 @@ const Topics = () => {
           </div>
         </div>
 
+        {/* Sidebar Overlay for Mobile */}
+        {isSidebarOpen && (
+          <div 
+            className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-10 lg:hidden"
+            onClick={() => setIsSidebarOpen(false)}
+          />
+        )}
+
         {/* Main Content Area */}
-        <div className="flex-1 overflow-y-auto bg-white p-8 relative">
+        <div className="flex-1 overflow-y-auto bg-white p-4 md:p-8 relative">
           {currentFile ? (
             <div className="max-w-5xl mx-auto">
               <DocumentViewer topic={currentTopic} file={currentFile} />
             </div>
           ) : (
-            <div className="h-full flex flex-col items-center justify-center text-center">
-              <div className="bg-white p-8 rounded-full shadow-sm mb-6 animate-pulse">
-                <BookOpen size={64} className="text-[#032068]/20" />
+            <div className="h-full flex flex-col items-center justify-center text-center p-6">
+              <div className="bg-slate-50 p-8 rounded-full mb-6 animate-pulse">
+                <BookOpen size={48} className="md:size-64 text-[#032068]/20" />
               </div>
-              <h2 className="text-2xl font-bold text-slate-700 mb-2">Select a Topic to Start</h2>
-              <p className="text-slate-500 max-w-sm">
+              <h2 className="text-xl md:text-2xl font-bold text-slate-700 mb-2">Select a Topic to Start</h2>
+              <p className="text-sm md:text-base text-slate-500 max-w-sm">
                 Choose a category and document from the sidebar to begin your learning session.
               </p>
             </div>
