@@ -1,14 +1,18 @@
 import express from "express";
-import { userAdd, userVerify, getDoc, getSummarize, getQuiz, getDoubt } from "../controller/authController.js";
+import { userAdd, userVerify, getDoc, getSummarize, getQuiz, getDoubt, forgotPassword, resetPassword, updatePassword } from "../controller/authController.js";
 import { uploadNote, getNotes, getNoteContent, deleteNote, getUserSummarize, getUserQuiz, getUserDoubt } from "../controller/notesController.js";
 import { getComments, addComment, deleteComment } from "../controller/commentController.js";
 import { agentChat } from "../controller/agentController.js";
 import { limiter } from "../middleware/rateLimiters.js";
+import { verifyToken } from "../middleware/verifyToken.js";
 
 const authRouter = express.Router();
 
 authRouter.post("/sign-up", limiter, userAdd);
 authRouter.get("/sign-in", limiter, userVerify);
+authRouter.post("/forgot-password", limiter, forgotPassword);
+authRouter.post("/reset-password", limiter, resetPassword);
+authRouter.post("/update-password", verifyToken, updatePassword);
 authRouter.get("/notes-docs/:topic/:file", getDoc);
 authRouter.post("/ai/summarize",getSummarize);
 authRouter.post("/ai/quiz",getQuiz);

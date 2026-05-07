@@ -27,6 +27,7 @@ export const signUpSchema = z.object({
       /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
       "Password must contain at least one uppercase letter, one lowercase letter, and one number"
     ),
+  email: z.string().email("Invalid email address").trim().toLowerCase(),
 });
 
 export const signIpSchema = z.object({
@@ -84,6 +85,7 @@ export function sanitizeSignUpData(data) {
     username: sanitizeUsername(data.username),
     full_name: sanitizeFullName(data.full_name),
     password: sanitizePassword(data.password),
+    email: data.email ? data.email.trim().toLowerCase() : "",
   };
 }
 

@@ -8,6 +8,8 @@ import LandingPage from "./components/LandingPage";
 import Topics from "./components/Topics";
 import AccountSettings from "./components/AccountSettings";
 import MyNotes from "./components/MyNotes";
+import ForgotPassword from "./components/ForgotPassword";
+import ResetPassword from "./components/ResetPassword";
 
 const App = () => {
   return (
@@ -23,6 +25,8 @@ const App = () => {
         <Route path="notes" element={<MyNotes/>}/>
         <Route path="notes/:noteTitle" element={<MyNotes/>}/>
         <Route path="sign-in" element={<SignIn/>}/>
+        <Route path="forgot-password" element={<ForgotPassword/>}/>
+        <Route path="reset-password/:token" element={<ResetPassword/>}/>
         <Route path="settings" element={<AccountSettings/>}/>
       </Routes>
     </div>

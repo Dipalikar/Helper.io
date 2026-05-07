@@ -5,12 +5,60 @@ import NavBar from "./NavBar";
 import ChatSidebar from "./ChatSidebar";
 import { User, Bell, Shield, Save, Trash2, Mail } from "lucide-react";
 import { toast } from "react-hot-toast";
+import axios from "axios";
+import { API_URL } from "../lib/config";
 
 const AccountSettings = () => {
   const navigate = useNavigate();
   const [decoded, setDecoded] = useState("");
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("profile");
+  const [passwords, setPasswords] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+  const [loading, setLoading] = useState(false);
+
+  const handleUpdateSecurity = async (e) => {
+    e.preventDefault();
+    if (passwords.newPassword !== passwords.confirmPassword) {
+      return toast.error("New passwords do not match");
+    }
+    if (passwords.newPassword.length < 8) {
+      return toast.error("New password must be at least 8 characters");
+    }
+
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.post(
+        `${API_URL}/update-password`,
+        {
+          currentPassword: passwords.currentPassword,
+          newPassword: passwords.newPassword,
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      if (response.data.success) {
+        toast.success(response.data.message);
+        setPasswords({
+          currentPassword: "",
+          newPassword: "",
+          confirmPassword: "",
+        });
+      } else {
+        toast.error(response.data.message);
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Error updating password");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -167,6 +215,8 @@ const AccountSettings = () => {
                         </label>
                         <input
                           type="password"
+                          value={passwords.currentPassword}
+                          onChange={(e) => setPasswords({...passwords, currentPassword: e.target.value})}
                           className="w-full bg-slate-50/50 border border-slate-200 p-3.5 rounded-2xl focus:outline-none focus:border-[#032068] focus:ring-1 focus:ring-[#032068] transition-all"
                           placeholder="••••••••"
                         />
@@ -178,6 +228,8 @@ const AccountSettings = () => {
                           </label>
                           <input
                             type="password"
+                            value={passwords.newPassword}
+                            onChange={(e) => setPasswords({...passwords, newPassword: e.target.value})}
                             className="w-full bg-slate-50/50 border border-slate-200 p-3.5 rounded-2xl focus:outline-none focus:border-[#032068] focus:ring-1 focus:ring-[#032068] transition-all"
                             placeholder="••••••••"
                           />
@@ -188,6 +240,8 @@ const AccountSettings = () => {
                           </label>
                           <input
                             type="password"
+                            value={passwords.confirmPassword}
+                            onChange={(e) => setPasswords({...passwords, confirmPassword: e.target.value})}
                             className="w-full bg-slate-50/50 border border-slate-200 p-3.5 rounded-2xl focus:outline-none focus:border-[#032068] focus:ring-1 focus:ring-[#032068] transition-all"
                             placeholder="••••••••"
                           />
@@ -199,12 +253,11 @@ const AccountSettings = () => {
                   <div className="pt-8 border-t border-slate-50">
                     <button
                       type="button"
-                      onClick={() =>
-                        toast.success("Security settings updated!")
-                      }
-                      className="bg-[#032068] text-white px-6 py-3.5 rounded-2xl font-bold hover:bg-[#0a369d] transition-all shadow-lg"
+                      disabled={loading}
+                      onClick={handleUpdateSecurity}
+                      className="bg-[#032068] text-white px-6 py-3.5 rounded-2xl font-bold hover:bg-[#0a369d] transition-all shadow-lg disabled:opacity-50"
                     >
-                      Update Security
+                      {loading ? "Updating..." : "Update Security"}
                     </button>
                   </div>
                 </div>

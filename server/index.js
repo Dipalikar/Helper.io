@@ -5,12 +5,11 @@ import sql from "./configs/db.js";
 const app = express();
 app.use(express.json());
 
-
 app.use(
   cors({
-    origin: "https://helperio.vercel.app",
+    origin: ["http://localhost:5173", "https://helperio.vercel.app"],
     credentials: true,
-  })
+  }),
 );
 
 app.get("/", (req, res) => {

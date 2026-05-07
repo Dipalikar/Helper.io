@@ -15,6 +15,7 @@ const SignUp = () => {
   const [form, setForm] = useState({
     username: "",
     full_name: "",
+    email: "",
     password: "",
   });
   useEffect(() => {
@@ -99,6 +100,15 @@ const SignUp = () => {
                 type="text"
                 placeholder="Username"
                 name="username"
+                className="w-full border border-slate-200 bg-slate-50 p-4 pl-6 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#fb6505]/20 focus:border-[#fb6505] transition-all"
+                required
+                onChange={handleChange}
+              />
+  
+              <input
+                type="email"
+                placeholder="Email address"
+                name="email"
                 className="w-full border border-slate-200 bg-slate-50 p-4 pl-6 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#fb6505]/20 focus:border-[#fb6505] transition-all"
                 required
                 onChange={handleChange}
